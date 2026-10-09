@@ -1,0 +1,33 @@
+\chapter{Introduction}
+\label{ch:intro}
+
+\section{Motivation}
+
+Many questions about tables cannot be answered from a single cell. ``What is the middle name of the player with the second most National Football League career rushing yards?'' requires finding the row whose rank is 2 in a table of rushing leaders, following the link from that row's player cell to the player's Wikipedia article, and reading the middle name there (Figure~\ref{fig:example}). Each step is a decision about which piece of evidence to look at next, and a wrong choice at the first step cannot be repaired by a good reader at the end. Benchmarks such as HybridQA \citep{chen-etal-2020-hybridqa}, OTT-QA \citep{chen2021open} and MMQA \citep{wu2025mmqa} were built around exactly this kind of chained evidence, across rows, linked passages and joined tables.
+
+Existing table reasoning systems all contain such a selection step, but none of them learns it from the quality of the final answer. HYBRIDER, the reference model for HybridQA, ranks cells with a classifier trained on weak labels and keeps only the top cell at each of two greedy steps \citep{chen-etal-2020-hybridqa}. TableRAG retrieves columns and cells by embedding similarity \citep{chen2024tablerag}. Chain-of-Table and Dater ask a large language model to pick rows and columns greedily \citep{wang2024chainoftable,ye2023dater}. The hybrid-graph method ODYSSEY prunes its graph with a fixed similarity threshold and a breadth-first traversal of fixed depth \citep{agarwal-etal-2025-hybrid}. All of these choose the next piece of evidence by how relevant it looks now, not by how likely it makes a correct final answer, and all of them stop after a fixed number of steps. When the stages are evaluated separately the cost of this is visible: in HYBRIDER, stage accuracies of 87--89\% for linking, ranking and hopping compound before the reader is even reached.
+
+The decision ``which entity next, or stop'' is a sequential decision with a delayed reward, which is the setting reinforcement learning was designed for. Reinforcement learning has been used for path finding in knowledge graphs \citep{xiong2017deeppath,das2018minerva,lin2018multihop}, for selecting a region inside a single table \citep{lee2024learningtoreduce,wu2025tabler1region}, and for training search agents over text \citep{jin2025searchr1,jiang2025s3,wang2025stepsearch}. The one attempt to apply it to table--text question answering chose between retrieval modules rather than entities and converged to a fixed strategy that did no better than always retrieving text \citep{jose2024qatexttablesdrl}. Whether a learned, entity-level selector can do better than the heuristics used by current frameworks is therefore an open question.
+
+\section{Problem statement}
+
+The project studies multi-hop table question answering in which a policy selects evidence one entity at a time. At every step the policy observes the question and the evidence gathered so far, and chooses either one entity from a candidate set (a table row or a passage linked from the table) or to stop; a frozen reader then answers from the selected evidence. The policy is trained with Proximal Policy Optimisation \citep{schulman2017ppo} in an actor--critic setup with generalised advantage estimation \citep{schulman2016gae}, after a behaviour-cloning warm start, on a reward that combines the reader's answer quality, a cost per selected entity and an evidence-recall signal. The selector is meant to be a drop-in replacement for the heuristic selection step of existing table reasoning pipelines, so that the reasoner itself stays unchanged.
+
+\section{Objectives}
+
+The work has four objectives:
+\begin{enumerate}
+  \item to survey the literature on learned evidence selection for multi-hop and table question answering, identify the most relevant papers, and state precisely what they leave open (Chapters~\ref{ch:literature} and~\ref{ch:gaps});
+  \item to formulate entity selection over tables and linked text as a Markov decision process with a well-defined state, action set and reward, including the behaviour of the evidence reward under different optimisers (Chapter~\ref{ch:formulation});
+  \item to design and implement the policy, the PPO training procedure and the comparison methods, together with a plan that addresses each identified gap (Chapters~\ref{ch:method} and~\ref{ch:implementation});
+  \item to obtain preliminary results on HybridQA that test the central claims against strong heuristics, with enough seeds and statistical testing for the comparisons to be meaningful (Chapters~\ref{ch:setup} and~\ref{ch:results}).
+\end{enumerate}
+The research questions that the experiments address are listed at the end of Chapter~\ref{ch:gaps}.
+
+\section{Contributions of this report}
+
+\input{generated/intro_findings}
+
+\section{Organisation}
+
+Chapter~\ref{ch:background} summarises the reinforcement learning methods used. Chapter~\ref{ch:literature} reviews the related work and Chapter~\ref{ch:gaps} ranks the most relevant papers and derives seven research gaps. Chapter~\ref{ch:formulation} defines the MDP and the reward, Chapter~\ref{ch:method} the policy and the training algorithms, and Chapter~\ref{ch:implementation} the implementation plan. Chapters~\ref{ch:setup} and~\ref{ch:results} describe the experimental setup and the preliminary results, Chapter~\ref{ch:discussion} discusses their limitations, and Chapter~\ref{ch:conclusion} concludes.

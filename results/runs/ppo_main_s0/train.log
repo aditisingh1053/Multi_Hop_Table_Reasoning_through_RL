@@ -1,0 +1,12 @@
+config: env={'horizon': 3, 'k_passages': 5, 'max_cands': 48} reward={'answer_metric': 'f1', 'step_cost': 0.02, 'evidence_bonus': 0.0, 'potential': 0.5, 'gamma': 1.0} rl={'algo': 'ppo', 'iters': 40, 'episodes_per_iter': 512, 'group_size': 4, 'epochs': 4, 'minibatch': 256, 'clip': 0.2, 'actor_lr': 0.0001, 'critic_lr': 0.0005, 'ent_coef': 0.01, 'gae_lambda': 0.95, 'target_kl': 0.03, 'max_grad_norm': 0.5, 'critic_warmup': 3, 'grpo_std_norm': True, 'adv_norm': True, 'anneal_lr': True, 'eval_every': 5, 'seed': 0, 'init_actor': 'results/runs/bc_s{seed}/actor_best.pt'}
+[ppo seed 0] iter 0 val F1 23.38 EM 19.60
+[ppo seed 0] it   1 ret 0.221 ans 0.255 items 1.71 ent 0.000 kl 0.0000 ev -0.02  (94s)
+[ppo seed 0] it   2 ret 0.227 ans 0.260 items 1.66 ent 0.000 kl 0.0000 ev 0.03  (70s)
+[ppo seed 0] it   3 ret 0.207 ans 0.240 items 1.66 ent 0.000 kl 0.0000 ev 0.04  (62s)
+[ppo seed 0] it   4 ret 0.195 ans 0.230 items 1.72 ent 0.753 kl 0.0098 ev 0.01  (89s)
+[ppo seed 0] it   5 ret 0.252 ans 0.286 items 1.69 ent 0.740 kl 0.0038 ev 0.08 val F1 22.85 (119s)
+[ppo seed 0] it   6 ret 0.216 ans 0.250 items 1.73 ent 0.704 kl 0.0056 ev 0.04  (190s)
+[ppo seed 0] it   7 ret 0.206 ans 0.239 items 1.64 ent 0.685 kl 0.0044 ev 0.07  (146s)
+[ppo seed 0] it   8 ret 0.224 ans 0.258 items 1.66 ent 0.632 kl 0.0042 ev -0.01  (129s)
+[ppo seed 0] it   9 ret 0.220 ans 0.253 items 1.65 ent 0.634 kl 0.0035 ev 0.08  (152s)
+[ppo seed 0] it  10 ret 0.214 ans 0.248 items 1.71 ent 0.590 kl 0.0035 ev 0.16 val F1 22.04 (256s)

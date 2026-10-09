@@ -1,0 +1,114 @@
+\chapter{Implementation Plan}
+\label{ch:implementation}
+
+This chapter turns the formulation into a plan that can be executed and checked. It lists the decision taken for every gap of Chapter~\ref{ch:gaps}, the software that realises it, the safeguards against the errors that most often invalidate RL results, the risks we know of, and the work that remains. The parts marked as completed were implemented and run for the preliminary results in Chapter~\ref{ch:results}; the rest is the schedule for the remainder of the project.
+
+\section{From gaps to design decisions}
+
+Table~\ref{tab:gapmap} connects each gap to the decision that addresses it and to the check that tells us whether the decision works. Two design decisions answer problems found in the closest precedent rather than a gap in the literature as a whole: actions are individual rows and passages rather than retrieval modules, because module-level actions collapsed to the best fixed sequence in \citet{jose2024qatexttablesdrl}, and the policy is warm-started, because none of the RL table--text work we found used a warm start while the graph and search literature reports that one is needed.
+
+\begin{table}[ht]
+\centering
+\footnotesize
+\caption{Gaps, design decisions and the checks that verify them. ``Done'' means implemented and exercised in the preliminary experiments.}
+\label{tab:gapmap}
+\begin{tabularx}{\textwidth}{@{}l>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{1.1cm}@{}}
+\toprule
+Gap & Decision & Verification & Status \\
+\midrule
+G1 & Rows and linked passages as actions; explicit \STOP; graph per question (\texttt{data.py}, \texttt{env.py}) & Unit test of candidate generation; gold-path reachability (Table~\ref{tab:datastats}) & done \\
+G2 & One frozen reader for all selectors; full dev set; random, BM25, dense, hybrid top-$k$, greedy hop, BC, oracle baselines; 5 seeds & Paired bootstrap over questions on seed-averaged scores; probability of improvement & done \\
+G3 & \STOP{} as an action, priced by a per-entity cost $c$ & Sweep $c\in\{0,0.02,0.05,0.1\}$; evidence-size distribution; accuracy versus evidence length & done \\
+G4 & Same signal $\psi$ as potential (invariant) or terminal bonus (not invariant) & Unit test of telescoping; ablation none / shaping / bonus; right answers from wrong evidence & done \\
+G5 & PPO+GAE, REINFORCE with learned baseline, GRPO on identical rewards, data and seeds & Learning curves; critic explained variance; degenerate-group rate; $\lambda\in\{0,0.95,1\}$ & done \\
+G6 & Selector behind a fixed interface; reasoner frozen; dense and greedy selectors swapped in & Same metrics and evidence length for every selector; second reader unseen in training & done (extractive reader); LLM reasoners planned \\
+G7 & Formulation allows join and other-table nodes & Multi-table phase with MMQA mirror and SQL-execution reward & planned \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Software architecture}
+
+The code is a small Python package (\texttt{src/mhtrl}) with command-line scripts (\texttt{scripts/}) and YAML experiment configurations (\texttt{configs/}). It uses PyTorch for the policy and the Hugging Face \texttt{transformers} library for the frozen encoder and reader; PPO, GRPO, REINFORCE and behaviour cloning are implemented directly (about 400 lines in two files) rather than through an RL library, both so that every term of the objective can be read in the code and because variable candidate sets with replayed masks are awkward to express in general-purpose LLM-RL libraries. Table~\ref{tab:modules} lists the modules.
+
+\begin{table}[ht]
+\centering
+\footnotesize
+\caption{Modules of the implementation.}
+\label{tab:modules}
+\begin{tabularx}{\textwidth}{@{}>{\ttfamily}l>{\raggedright\arraybackslash}X@{}}
+\toprule
+\normalfont Module & Responsibility \\
+\midrule
+extract\_wikitables.py & reads the 15{,}316 tables and passage files directly from the git object store (Section~\ref{sec:datapipe}) \\
+data.py & per-question entity graph: row and passage nodes, hyperlink edges, gold paths from traced answer nodes \\
+build\_instances.py & table-disjoint train/validation split, BM25 statistics on train only, cached frozen embeddings \\
+text.py & official HybridQA answer normalisation, EM and F1, BM25, tokenisation \\
+encoder.py, reader.py & frozen MiniLM sentence encoder; frozen extractive reader with a persistent (question, entity) cache \\
+env.py & candidate generation, state and candidate features, termination, reward with shaping and bonus \\
+policy.py & pointer actor with \STOP{} head; separate critic \\
+rollout.py & batched lock-step rollouts, collation with masks, evaluation of evidence sets \\
+rl/algos.py, rl/bc.py & PPO, GRPO and REINFORCE in one trainer; behaviour cloning on set-valued targets \\
+baselines.py & random walk, top-$k$ (BM25, dense, hybrid), greedy rank-then-hop, oracle \\
+train.py, evaluate.py, aggregate.py & training per seed, greedy evaluation, result tables with bootstrap tests \\
+tests/test\_core.py & unit tests of metrics, candidate generation, shaping, GAE and masking \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Data pipeline}
+\label{sec:datapipe}
+
+The pipeline has four steps, each a single command: clone the HybridQA and WikiTables-WithLinks repositories; extract the tables and passages; build the per-question graphs and embeddings; compute the dataset statistics. Three practical obstacles came up and are worth recording because they would also affect anyone reproducing the work. First, several file names in WikiTables-WithLinks contain characters that Windows does not allow (for example colons and quotation marks), so a normal checkout fails on Windows; we read every file directly from the git object store with \texttt{git cat-file --batch}, which avoids the working tree. Second, the preprocessed archive linked from the HybridQA README now returns HTTP 404, and the Hugging Face copy is a loading script that recent versions of the \texttt{datasets} library no longer execute and that omits the traced answer nodes, so the raw JSON files are the only usable source. Third, the official MMQA data link has expired, which is why the multi-table phase is planned around a mirror (Section~\ref{sec:workplan}).
+
+The training and validation questions come from HybridQA's training set. Tables are shuffled with a fixed seed and assigned whole to a training pool until it holds 10{,}000 questions, and the following tables to the validation split until it holds \nVal{} questions, so validation shares no table with the training pool. To keep reader-in-the-loop training within the CPU budget, all experiments use the first \nTrain{} questions of the pool, which come from \nTrainTables{} whole tables. Only questions with at least one traced answer location are used for training and validation. The test split is the complete official dev set of \nTest{} questions, including the questions whose answer could not be traced. Of the \nTestTables{} dev tables, \testTablesInTrain{} also occur in our training subset; this overlap is inherited from HybridQA, whose splits share tables, and it is the reason model selection uses the table-disjoint validation split.
+
+\section{Safeguards against error}
+
+RL results are easy to get wrong in ways that produce plausible numbers. The implementation guards against the failure modes we consider most likely.
+
+\paragraph{Leakage.} BM25 document frequencies are estimated on training entities only. The checkpoints that are reported (the behaviour-cloning epoch and the RL iterate of each run) are chosen on the validation split. The main configuration ($\kappa=0.5$, $c=0.02$, $\lambda=0.95$) was fixed before any run, and ablations are reported against it rather than used to pick it. The test split is used once per trained model, for the final greedy evaluation, and never for tuning. The oracle is the only selector that sees gold evidence at test time, and it is reported as an upper bound.
+
+\paragraph{Correctness of the RL machinery.} Unit tests check that the normalisation and F1 reproduce the official script on hand-made cases; that candidates follow the graph (only rows before the first hop, the linked passage after its row is chosen, termination at the horizon); that potential-based shaping leaves the return of every tested episode unchanged while the terminal bonus does not; that GAE reduces to Monte-Carlo advantages at $\lambda=1$ and to one-step TD at $\lambda=0$; and that masked candidates and \STOP{} at $t=0$ receive exactly zero probability. At run time the environment asserts that no entity is selected twice and that \STOP{} is only taken when allowed. Masks are stored with each transition and re-applied in every update.
+
+\paragraph{Metrics.} EM and F1 use the normalisation of HybridQA's official evaluation script, and the in-table and in-passage breakdowns use the official dev reference lists. Every number in the results chapter is written into the \LaTeX{} sources by the scripts that compute it, so no figure is copied by hand.
+
+\paragraph{Reproducibility.} Each run fixes the PyTorch and NumPy seeds; behaviour cloning and RL for seed $s$ start from the cloned policy of the same seed. Reader outputs are cached per reader model, per quantisation setting and per (question, entity) pair, so a cached answer is exactly what the reader would return, and the cache cannot mix outputs of different readers.
+
+\paragraph{Statistics.} Following \citet{agarwal2021deep} and \citet{henderson2018deep}, learned methods are reported as mean and standard deviation over seeds (five for the main methods, three for ablations), and pairwise differences are tested with a paired bootstrap over questions (10{,}000 resamples) on per-question scores averaged over seeds.
+
+\section{Risk register}
+
+\begin{table}[ht]
+\centering
+\footnotesize
+\caption{Known risks, their mitigation, and their status after the preliminary phase.}
+\label{tab:risks}
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{3.6cm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{3.3cm}@{}}
+\toprule
+Risk & Mitigation & Status \\
+\midrule
+Reader calls dominate training time & Decomposable reader with a shared (question, entity) cache; warm start keeps exploration focused & resolved (Section~\ref{sec:compute}) \\
+Too little headroom between heuristics and oracle & Measured before any RL training (Section~\ref{sec:headroom}) & resolved \\
+PPO collapses to a fixed strategy, as in \citet{jose2024qatexttablesdrl} & Entity-level actions; warm start; entropy bonus; per-seed reporting & monitored \\
+Untrained critic destroys the warm start & Five critic-only iterations; small actor learning rate; KL early stopping; a pilot run checked the critic before the main runs & monitored \\
+Noisy traced evidence misguides BC and the evidence reward & Set-valued targets; evidence enters as shaping by default; right-from-wrong-evidence rate reported & partly open \\
+Reader artefacts are optimised instead of evidence quality & Evaluation with a second reader never used in training & tested \\
+Seed variance hides real differences & Five seeds for main methods; paired bootstrap & addressed \\
+Multi-table data unavailable or unlicensed & Mirror used only for an optional experiment; HybridQA remains primary & open \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Work plan}
+\label{sec:workplan}
+
+\paragraph{Phase 1 (completed): preliminary study.} Data pipeline, environment, policy, behaviour cloning, PPO, GRPO and REINFORCE, baselines, unit tests and the experiments of Chapter~\ref{ch:results}.
+
+\paragraph{Phase 2: strengthen the single-table--text setting.} Train on the full HybridQA training set rather than a subset; add cell-level and column-level nodes so that the policy can point at the answer cell, which matters for in-table questions; try action dropout \citep{lin2018multihop} for exploration; test a baseline-relative reward in the style of s3 \citep{jiang2025s3}, which pays for improvement over the greedy heuristic's evidence; and tune the main hyperparameters on the validation split with the same budget for every method.
+
+\paragraph{Phase 3: integration with LLM reasoners.} Replace the extractive reader with an instruction-tuned LLM in two existing frameworks, keeping the reasoner fixed: as the pruning step of an ODYSSEY-style hybrid graph on a HybridQA sample, and as a row pre-filter for Chain-of-Table on WikiTableQuestions, with evidence labels derived from SQUALL SQL as in \citet{lee2024learningtoreduce}. Report accuracy, prompt tokens and latency against each framework's own selection step. Because LLM calls are expensive, the policy will be trained with the cheap extractive reader and transferred, which the second-reader experiment of Chapter~\ref{ch:results} already tests in miniature.
+
+\paragraph{Phase 4: multi-table selection (G7).} Add table and join nodes built from primary and foreign keys, use row and column nodes within large tables, and reward the policy by executing the gold SQL of MMQA's three-table questions on the selected sub-database. This phase depends on the licence status of the MMQA mirror and is the most uncertain part of the plan.
+
+\paragraph{Phase 5: final analysis and report.} Statistical comparison with interquartile means and probability of improvement over at least five seeds, error analysis by question type and hop count, and the final report and seminar.

@@ -1,0 +1,54 @@
+\chapter{Reproducing the Experiments}
+\label{app:repro}
+
+All commands are run from the repository root with Python~3.12; the package versions are pinned in \texttt{requirements.txt}. Every step writes its outputs under \texttt{data/} or \texttt{results/}, and the last two steps regenerate every table and figure of Chapter~\ref{ch:results} directly into the \LaTeX{} sources.
+
+\begin{small}
+\begin{verbatim}
+# 1. data (HybridQA questions + WikiTables-WithLinks tables and passages)
+git clone --depth 1 https://github.com/wenhuchen/HybridQA data/raw/HybridQA
+git clone --depth 1 --no-checkout https://github.com/wenhuchen/WikiTables-WithLinks \
+          data/raw/WikiTables-WithLinks
+python scripts/extract_wikitables.py          # reads blobs from the git object store
+python scripts/build_instances.py --n_train 10000 --n_val 1000
+python scripts/data_stats.py
+python tests/test_core.py                      # unit tests
+
+# 2. baselines with the frozen reader
+python scripts/run_baselines.py --split val
+python scripts/run_baselines.py --split test
+
+# 3. learned selectors (one command per seed)
+python scripts/train.py --method bc --seed 0
+python scripts/train.py --config configs/ppo_main.yaml --seed 0
+python scripts/train.py --config configs/grpo.yaml --seed 0
+python scripts/train.py --config configs/reinforce.yaml --seed 0
+#    ablations: configs/ppo_{noshape,evbonus,em,lam0,lam1,nocost,cost05,cost10,scratch}.yaml
+
+# 4. evaluation, second reader, tables and figures
+python scripts/evaluate.py --runs results/runs/* --split test
+python scripts/run_baselines.py --split test --reader deepset/roberta-base-squad2 --limit 1000
+python scripts/evaluate.py --runs results/runs/* --split test \
+                           --reader deepset/roberta-base-squad2 --limit 1000
+python scripts/make_assets.py
+\end{verbatim}
+\end{small}
+
+\chapter{Repository Layout}
+\label{app:layout}
+
+\begin{small}
+\begin{verbatim}
+configs/            one YAML file per experiment (reward, environment, optimiser)
+data/               raw clones, processed graphs and embeddings, reader cache (not versioned)
+docs/               earlier planning documents of the project
+papers/             PDFs of the papers collected in the first phase
+report/             this report (main.tex, chapters/, generated/, figures/, references.bib)
+reports/            literature synthesis that the review chapters are based on
+research_notes/     per-topic notes of the literature search, with verified BibTeX
+results/            baselines/, runs/<name>_s<seed>/, logs/, summary files
+scripts/            command-line entry points listed in Appendix A
+src/mhtrl/          data, environment, policy, reader, rollout, rl/ (PPO, GRPO, REINFORCE, BC)
+tests/              unit tests
+\end{verbatim}
+\end{small}

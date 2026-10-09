@@ -1,0 +1,61 @@
+2026-10-07 01:29:54.281194: I tensorflow/core/util/port.cc:113] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-10-07 01:29:57.028363: I tensorflow/core/util/port.cc:113] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+Some weights of the model checkpoint at deepset/minilm-uncased-squad2 were not used when initializing BertForQuestionAnswering: ['bert.pooler.dense.bias', 'bert.pooler.dense.weight']
+- This IS expected if you are initializing BertForQuestionAnswering from the checkpoint of a model trained on another task or with another architecture (e.g. initializing a BertForSequenceClassification model from a BertForPreTraining model).
+- This IS NOT expected if you are initializing BertForQuestionAnswering from the checkpoint of a model that you expect to be exactly identical (initializing a BertForSequenceClassification model from a BertForSequenceClassification model).
+You're using a BertTokenizerFast tokenizer. Please note that with a fast tokenizer, using the `__call__` method is faster than using a method to encode the text followed by a call to the `pad` method to get a padded encoding.
+val random_k2_s0     EM 7.00 F1 9.96 AnsRec 14.4 GoldHit 8.1 items 2.00 words 141 (153s, cache 2000)
+val random_k3_s0     EM 7.40 F1 10.10 AnsRec 18.1 GoldHit 9.5 items 3.00 words 221 (176s, cache 4719)
+val random_k2_s1     EM 6.10 F1 9.29 AnsRec 12.6 GoldHit 6.8 items 2.00 words 137 (100s, cache 6293)
+val random_k3_s1     EM 6.10 F1 8.90 AnsRec 18.3 GoldHit 8.5 items 3.00 words 217 (150s, cache 8486)
+val random_k2_s2     EM 5.40 F1 8.15 AnsRec 12.0 GoldHit 6.5 items 2.00 words 135 (78s, cache 9738)
+val random_k3_s2     EM 7.50 F1 9.83 AnsRec 17.4 GoldHit 10.4 items 3.00 words 214 (130s, cache 11504)
+val bm25_k1          EM 13.30 F1 17.38 AnsRec 21.2 GoldHit 1.5 items 1.00 words 118 (58s, cache 12008)
+val dense_k1         EM 10.80 F1 14.59 AnsRec 18.0 GoldHit 4.3 items 1.00 words 90 (31s, cache 12357)
+val hybrid_k1        EM 13.00 F1 17.26 AnsRec 21.3 GoldHit 1.7 items 1.00 words 114 (9s, cache 12401)
+val bm25_k2          EM 19.40 F1 24.13 AnsRec 36.2 GoldHit 11.3 items 2.00 words 235 (46s, cache 12800)
+val dense_k2         EM 13.70 F1 17.86 AnsRec 26.9 GoldHit 11.8 items 2.00 words 165 (32s, cache 13182)
+val hybrid_k2        EM 17.40 F1 22.50 AnsRec 36.1 GoldHit 11.8 items 2.00 words 217 (13s, cache 13254)
+val bm25_k3          EM 19.20 F1 24.26 AnsRec 45.6 GoldHit 21.9 items 3.00 words 353 (51s, cache 13662)
+val dense_k3         EM 15.60 F1 19.95 AnsRec 33.5 GoldHit 19.0 items 3.00 words 244 (37s, cache 14101)
+val hybrid_k3        EM 19.50 F1 24.72 AnsRec 47.9 GoldHit 24.4 items 3.00 words 325 (14s, cache 14194)
+val greedy_hop       EM 15.20 F1 19.53 AnsRec 32.0 GoldHit 32.0 items 2.00 words 191 (63s, cache 14635)
+val oracle           EM 56.90 F1 62.87 AnsRec 99.4 GoldHit 100.0 items 1.65 words 145 (34035s, cache 16661)
+config: env={'horizon': 3, 'k_passages': 5, 'max_cands': 48} reward={'answer_metric': 'f1', 'step_cost': 0.02, 'evidence_bonus': 0.0, 'potential': 0.0, 'gamma': 1.0} rl={'algo': 'ppo', 'iters': 40, 'episodes_per_iter': 512, 'group_size': 4, 'epochs': 4, 'minibatch': 256, 'clip': 0.2, 'actor_lr': 0.0001, 'critic_lr': 0.0005, 'ent_coef': 0.01, 'gae_lambda': 0.95, 'target_kl': 0.03, 'max_grad_norm': 0.5, 'critic_warmup': 3, 'grpo_std_norm': True, 'adv_norm': True, 'anneal_lr': True, 'eval_every': 5, 'seed': 0, 'init_actor': ''}
+[bc seed 0] oracle steps: train 13179 (skipped 0 questions), val 2702
+2026-10-07 11:18:05.117768: I tensorflow/core/util/port.cc:113] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-10-07 11:18:07.788047: I tensorflow/core/util/port.cc:113] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+Some weights of the model checkpoint at deepset/minilm-uncased-squad2 were not used when initializing BertForQuestionAnswering: ['bert.pooler.dense.bias', 'bert.pooler.dense.weight']
+- This IS expected if you are initializing BertForQuestionAnswering from the checkpoint of a model trained on another task or with another architecture (e.g. initializing a BertForSequenceClassification model from a BertForPreTraining model).
+- This IS NOT expected if you are initializing BertForQuestionAnswering from the checkpoint of a model that you expect to be exactly identical (initializing a BertForSequenceClassification model from a BertForSequenceClassification model).
+You're using a BertTokenizerFast tokenizer. Please note that with a fast tokenizer, using the `__call__` method is faster than using a method to encode the text followed by a call to the `pad` method to get a padded encoding.
+[bc seed 0] epoch 1 loss 1.602 acc 0.506 val loss 0.933 step-acc 0.627 val F1 19.53 EM 15.50 (115s)
+[bc seed 0] epoch 2 loss 0.932 acc 0.633 val loss 0.902 step-acc 0.642 val F1 19.03 EM 15.10 (95s)
+[bc seed 0] epoch 3 loss 0.846 acc 0.683 val loss 0.887 step-acc 0.662 val F1 21.69 EM 18.00 (90s)
+[bc seed 0] epoch 4 loss 0.772 acc 0.725 val loss 0.897 step-acc 0.665 val F1 20.98 EM 17.00 (25s)
+[bc seed 0] epoch 5 loss 0.694 acc 0.756 val loss 0.948 step-acc 0.668 val F1 22.33 EM 18.30 (24s)
+[bc seed 0] epoch 6 loss 0.624 acc 0.781 val loss 0.984 step-acc 0.671 val F1 23.38 EM 19.60 (25s)
+[bc seed 0] epoch 7 loss 0.566 acc 0.803 val loss 1.015 step-acc 0.666 val F1 22.39 EM 18.30 (34s)
+[bc seed 0] epoch 8 loss 0.523 acc 0.820 val loss 1.055 step-acc 0.662 val F1 21.69 EM 17.60 (33s)
+done: C:\Users\aksgu\Desktop\Multi_Hop_Table_Reasoning_through_RL\results\runs\bc_s0
+config: env={'horizon': 3, 'k_passages': 5, 'max_cands': 48} reward={'answer_metric': 'f1', 'step_cost': 0.02, 'evidence_bonus': 0.0, 'potential': 0.5, 'gamma': 1.0} rl={'algo': 'ppo', 'iters': 40, 'episodes_per_iter': 512, 'group_size': 4, 'epochs': 4, 'minibatch': 256, 'clip': 0.2, 'actor_lr': 0.0001, 'critic_lr': 0.0005, 'ent_coef': 0.01, 'gae_lambda': 0.95, 'target_kl': 0.03, 'max_grad_norm': 0.5, 'critic_warmup': 3, 'grpo_std_norm': True, 'adv_norm': True, 'anneal_lr': True, 'eval_every': 5, 'seed': 0, 'init_actor': 'results/runs/bc_s{seed}/actor_best.pt'}
+[ppo seed 0] iter 0 val F1 23.38 EM 19.60
+'(MaxRetryError("HTTPSConnectionPool(host='huggingface.co', port=443): Max retries exceeded with url: /deepset/minilm-uncased-squad2/resolve/main/tokenizer_config.json (Caused by SSLError(SSLError(1, '[SSL: WRONG_VERSION_NUMBER] wrong version number (_ssl.c:1000)')))"), '(Request ID: 84aad09f-0732-4ce5-abd8-6480953ca801)')' thrown while requesting HEAD https://huggingface.co/deepset/minilm-uncased-squad2/resolve/main/tokenizer_config.json
+Retrying in 1s [Retry 1/5].
+2026-10-07 11:25:49.785271: I tensorflow/core/util/port.cc:113] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-10-07 11:25:51.134657: I tensorflow/core/util/port.cc:113] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+Some weights of the model checkpoint at deepset/minilm-uncased-squad2 were not used when initializing BertForQuestionAnswering: ['bert.pooler.dense.bias', 'bert.pooler.dense.weight']
+- This IS expected if you are initializing BertForQuestionAnswering from the checkpoint of a model trained on another task or with another architecture (e.g. initializing a BertForSequenceClassification model from a BertForPreTraining model).
+- This IS NOT expected if you are initializing BertForQuestionAnswering from the checkpoint of a model that you expect to be exactly identical (initializing a BertForSequenceClassification model from a BertForSequenceClassification model).
+You're using a BertTokenizerFast tokenizer. Please note that with a fast tokenizer, using the `__call__` method is faster than using a method to encode the text followed by a call to the `pad` method to get a padded encoding.
+[ppo seed 0] it   1 ret 0.221 ans 0.255 items 1.71 ent 0.000 kl 0.0000 ev -0.02  (94s)
+[ppo seed 0] it   2 ret 0.227 ans 0.260 items 1.66 ent 0.000 kl 0.0000 ev 0.03  (70s)
+[ppo seed 0] it   3 ret 0.207 ans 0.240 items 1.66 ent 0.000 kl 0.0000 ev 0.04  (62s)
+[ppo seed 0] it   4 ret 0.195 ans 0.230 items 1.72 ent 0.753 kl 0.0098 ev 0.01  (89s)
+[ppo seed 0] it   5 ret 0.252 ans 0.286 items 1.69 ent 0.740 kl 0.0038 ev 0.08 val F1 22.85 (119s)
+[ppo seed 0] it   6 ret 0.216 ans 0.250 items 1.73 ent 0.704 kl 0.0056 ev 0.04  (190s)
+[ppo seed 0] it   7 ret 0.206 ans 0.239 items 1.64 ent 0.685 kl 0.0044 ev 0.07  (146s)
+[ppo seed 0] it   8 ret 0.224 ans 0.258 items 1.66 ent 0.632 kl 0.0042 ev -0.01  (129s)
+[ppo seed 0] it   9 ret 0.220 ans 0.253 items 1.65 ent 0.634 kl 0.0035 ev 0.08  (152s)
+[ppo seed 0] it  10 ret 0.214 ans 0.248 items 1.71 ent 0.590 kl 0.0035 ev 0.16 val F1 22.04 (256s)
+PHASE_A_EXIT 127

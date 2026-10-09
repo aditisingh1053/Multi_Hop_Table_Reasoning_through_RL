@@ -1,0 +1,110 @@
+\chapter{Problem Formulation}
+\label{ch:formulation}
+
+This chapter defines the decision problem precisely: the graph a policy walks on, the state, the actions, the reward, and two properties of the reward that matter when comparing optimisers.
+
+\section{Task}
+
+An instance consists of a question $q$ with gold answer $y$, a table $T$ with header $h_1,\dots,h_C$ and rows $\mathbf{r}_1,\dots,\mathbf{r}_R$, and the set of Wikipedia passages $\mathcal{P}$ hyperlinked from cells of $T$. A \emph{selector} chooses an ordered evidence list $\evid=(e_1,\dots,e_n)$ of entities, and a \emph{frozen reader} $\rho$ maps $(q,\evid)$ to an answer string. The selector is the only component that is learned. Its quality is measured by how well $\rho(q,\evid)$ matches $y$ under the official HybridQA exact-match and token-F1 metrics, and by how much evidence it needs.
+
+Figure~\ref{fig:example} shows a dev example. Answering it requires choosing the row whose rank is 2, following the hyperlink from that row's player cell, and reading the middle name in the linked passage; the passage of the rank-1 player also contains the string ``Jerry'', which is why the traced gold evidence for this question lists several locations.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+  font=\small,
+  row/.style={draw, rounded corners=2pt, minimum height=0.6cm, text width=6.6cm, align=left, inner sep=3pt},
+  psg/.style={draw, rounded corners=2pt, fill=gray!8, minimum height=0.6cm, text width=5.4cm, align=left, inner sep=3pt},
+  >={Stealth[length=2mm]}]
+  \node (q) [text width=13cm, align=left] {\textbf{Q:} What is the middle name of the player with the second most National Football League career rushing yards?\hfill \textbf{A:} Jerry};
+  \node (r1) [row, below=0.35cm of q.south west, anchor=north west] {Rank is 1 ; Player is Emmitt Smith ; \dots ; Yards is 18,355};
+  \node (r2) [row, below=0.15cm of r1, very thick] {Rank is 2 ; Player is Walter Payton ; \dots ; Yards is 16,726};
+  \node (r3) [row, below=0.15cm of r2] {Rank is 3 ; Player is Frank Gore ; \dots ; Yards is 15,347};
+  \node (p1) [psg, right=0.5cm of r1] {Emmitt Smith : Emmitt James Smith III \dots};
+  \node (p2) [psg, right=0.5cm of r2, very thick] {Walter Payton : Walter Jerry Payton \dots};
+  \draw[->, thick] (r2.east) -- (p2.west);
+  \draw[->, gray] (r1.east) -- (p1.west);
+  \node[font=\footnotesize, anchor=north west] at ($(r3.south west)+(0,-0.1)$) {Rows are linearised as ``header is value''; arrows are cell hyperlinks. Bold: the evidence a correct policy selects.};
+\end{tikzpicture}
+\caption{A HybridQA dev question (id \texttt{00153f694413a536}) as an entity graph. The correct evidence is the rank-2 row followed by the passage linked from it.}
+\label{fig:example}
+\end{figure}
+
+\section{Entity graph}
+\label{sec:graph}
+
+For each question we build a graph $\mathcal{V}=\mathcal{V}_{\mathrm{row}}\cup\mathcal{V}_{\mathrm{psg}}$ with one node per table row and one node per distinct passage linked from a cell of the table. A row node carries the text ``\textit{title} : $h_1$ is $v_1$ ; $h_2$ is $v_2$ ; \dots'' (empty cells are skipped), and a passage node carries ``\textit{entity name} : \textit{passage}'', truncated to 300 words. An undirected edge joins row $i$ and passage $p$ whenever some cell of row $i$ links to $p$. Rows rather than single cells are the table-side entities because a row is the unit that both supports table answers and anchors the hop to a passage; Section~\ref{sec:future} discusses cell- and column-level nodes for other datasets.
+
+\paragraph{Gold evidence.} HybridQA's traced files list, for each training and dev question, every cell whose text matches the answer and every linked passage that contains it, each with its row and column. We convert each traced location into a \emph{gold path}: $(i)$ for an answer inside row $i$, and $(i,p)$ for an answer inside passage $p$ linked from row $i$. The result is a set $\gold$ of acceptable paths per question. Because the tracer matches strings, $\gold$ can contain wrong paths, as in Figure~\ref{fig:example}, and it can be empty when the answer is computed. Table~\ref{tab:datastats} summarises the graphs.
+
+\input{generated/table_data}
+
+\section{Markov decision process}
+\label{sec:mdp}
+
+\paragraph{State.} The state at step $t$ is $s_t=(q,\evid_t,t)$, where $\evid_t$ is the evidence selected so far ($\evid_0=\emptyset$). The order of selection is kept, so the last selected entity is available to the policy.
+
+\paragraph{Actions.} The candidate set contains three kinds of entities that have not been selected yet:
+\begin{equation}
+  \cand_t=\underbrace{\mathcal{V}_{\mathrm{row}}}_{\text{all rows}}\ \cup\ \underbrace{\operatorname{top}_{k}(\mathcal{V}_{\mathrm{psg}})}_{\text{best-matching passages}}\ \cup\ \underbrace{\mathcal{N}(\evid_t)\cap\mathcal{V}_{\mathrm{psg}}}_{\text{passages linked from selected rows}}\ \setminus\ \evid_t ,
+\end{equation}
+where $\operatorname{top}_k$ ranks passages by the hybrid score $h(q,v)=\cos(\mathbf{q},\mathbf{v})+\mathrm{BM25}(q,v)/\max_{v'}\mathrm{BM25}(q,v')$ with $k=5$, and $\mathcal{N}(\cdot)$ denotes graph neighbours. The first two parts let the policy start from either side of a hop (row first, or passage first for questions whose condition sits in a passage); the third part is the graph expansion. If $|\cand_t|$ exceeds $K=48$, candidates linked to the evidence are kept first and the rest by hybrid score. The action set is $\mathcal{A}_t=\cand_t$ at $t=0$, so that the reader always receives at least one entity, and $\mathcal{A}_t=\cand_t\cup\{\STOP\}$ afterwards.
+
+\paragraph{Transitions and termination.} Selecting $a_t\in\cand_t$ appends it to the evidence, $\evid_{t+1}=\evid_t\cup\{a_t\}$, and updates the candidate set. The episode ends when the policy chooses \STOP{} or when $|\evid_t|=H$, with horizon $H=3$. Transitions are deterministic. Every gold path is reachable within the horizon: rows are always candidates, and a gold passage becomes a candidate as soon as its row is selected; the measured exceptions caused by the cap $K$ are reported in Table~\ref{tab:datastats}.
+
+\section{Reward}
+\label{sec:reward}
+
+\paragraph{The frozen reader.} The reader is an extractive question-answering model trained on SQuAD~2.0 \citep{rajpurkar-etal-2018-know} (MiniLM, 33M parameters; Section~\ref{sec:setup-reader}). It reads each selected entity separately together with the question and returns the best span $a_e$ with a null-adjusted confidence $\sigma_e$, the best span score minus the score of the ``no answer'' option. The answer for the evidence list is the span of the most confident entity,
+\begin{equation}
+  \rho(q,\evid)=a_{e^\star},\qquad e^\star=\arg\max_{e\in\evid}\sigma_e ,
+\end{equation}
+the aggregation used by open-domain retriever--reader systems such as DrQA \citep{chen-etal-2017-reading}. This choice is deliberate. It makes the reader's output decomposable over entities, so reader calls can be cached per (question, entity) pair and shared by every method, seed and training iteration, which is what makes a reader-in-the-loop reward affordable on a CPU. It also means that adding an entity can only change the answer if the reader is more confident about the new entity, so unnecessary evidence acts as a distractor.
+
+\paragraph{Answer reward and cost.} The task reward is the token F1 between the reader's answer and the gold answer, $R_{\mathrm{ans}}(\evid)=\mathrm{F1}(\rho(q,\evid),y)$, paid when the episode ends; exact match is used in one ablation. Every selected entity costs $c$ (default $c=0.02$), which gives STOP a reason to exist.
+
+\paragraph{Evidence signal.} Gold-path recall measures how much of the best-covered gold path the evidence contains:
+\begin{equation}
+  \psi(\evid)=\max_{P\in\gold}\frac{|P\cap\evid|}{|P|}\in[0,1],
+  \label{eq:psi}
+\end{equation}
+with $\psi=0$ when $\gold=\emptyset$. Taking the maximum over paths treats the noisy, multi-valued traced evidence as a set of acceptable targets rather than forcing a single label. The same quantity can enter the reward in two ways.
+
+\begin{definition}[Two forms of the evidence reward]
+\emph{Potential-based shaping} with weight $\kappa$ uses $\Phi(s_t)=\kappa\,\psi(\evid_t)$ for non-terminal states and $\Phi=0$ for the terminal state, and adds $F_t=\Phi(s_{t+1})-\Phi(s_t)$ to every step. A \emph{terminal bonus} with weight $\lambda_{\mathrm{ev}}$ adds $\lambda_{\mathrm{ev}}\,\psi(\evid_T)$ to the final reward only.
+\end{definition}
+
+With $\gamma=1$, the per-step reward is therefore
+\begin{equation}
+  r_t=-c\,\mathbb{1}[a_t\neq\STOP]+F_t+\mathbb{1}[t=T-1]\big(R_{\mathrm{ans}}(\evid_T)+\lambda_{\mathrm{ev}}\,\psi(\evid_T)\big),
+  \label{eq:reward}
+\end{equation}
+where $T$ is the number of decisions in the episode (the selections plus a final \STOP{} if one was chosen). The main configuration uses shaping with $\kappa=0.5$ and $\lambda_{\mathrm{ev}}=0$; the ablations vary both.
+
+\begin{proposition}[Shaping leaves every return unchanged]
+\label{prop:invariance}
+For any episode, the sum of the shaping terms is $\sum_{t=0}^{T-1}F_t=-\Phi(s_0)=0$. Hence the return of every trajectory, and therefore the optimal policy, is the same with and without potential-based shaping.
+\end{proposition}
+\begin{proof}
+The sum telescopes to $\Phi(s_T)-\Phi(s_0)$. The terminal state has potential $0$ by definition, and $\Phi(s_0)=\kappa\,\psi(\emptyset)=0$. This is the episodic case of \citet{ng1999policy}.
+\end{proof}
+
+The terminal bonus has no such property: it changes the objective to $\E[R_{\mathrm{ans}}+\lambda_{\mathrm{ev}}\psi-c|\evid|]$, so it pays for covering traced evidence even when the reader would have answered correctly without it, and it trains the policy towards the tracer's mistakes. Shaping only moves credit to earlier steps, which can speed learning for a method that estimates per-step advantages, but it cannot change what the policy converges to.
+
+\begin{proposition}[Group-relative advantages cannot see shaping]
+\label{prop:grpo-blind}
+Let $R_1,\dots,R_G$ be the returns of $G$ episodes of the same question, and let $\hat A_i$ be the group-relative advantage of Equation~\eqref{eq:grpo}, assigned to every step of episode $i$. Adding potential-based shaping leaves every $\hat A_i$ unchanged.
+\end{proposition}
+\begin{proof}
+By Proposition~\ref{prop:invariance}, shaping changes no return, so the group mean and standard deviation, and hence every $\hat A_i$, are unchanged.
+\end{proof}
+
+PPO with GAE is different. With $\lambda<1$ the advantage of step $t$ depends on the per-step rewards and on the critic's values at later steps, so shaping changes how credit is distributed over the steps of an episode even though it does not change the episode's return. A comparison of PPO and GRPO ``under the same reward'' therefore compares credit assignment as well as optimisers. We report PPO both with and without shaping so that the two effects can be separated.
+
+\section{Objective}
+
+The selector is a stochastic policy $\pi_\theta(a\mid s)$ over $\mathcal{A}_t$. With shaping only, the objective is
+\begin{equation}
+  J(\theta)=\E_{q\sim\mathcal{D}}\ \E_{\evid\sim\pi_\theta}\Big[\mathrm{F1}\big(\rho(q,\evid),y\big)-c\,|\evid|\Big],
+\end{equation}
+the expected answer quality of the frozen reader, net of an evidence budget. At test time the policy acts greedily, choosing the most probable action at each step.

@@ -1,0 +1,19 @@
+# raw and processed data (re-created by scripts/extract_wikitables.py and scripts/build_instances.py)
+data/
+# local toolchain (Tectonic LaTeX engine)
+tools/
+logs/
+__pycache__/
+*.pyc
+# model checkpoints are re-created by scripts/train.py
+*.pt
+# LaTeX build artefacts
+report/*.aux
+report/*.log
+report/*.out
+report/*.toc
+report/*.bbl
+report/*.blg
+gpu_bundle.zip
+results_bundle.zip
+results_smoke/

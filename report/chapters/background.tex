@@ -1,0 +1,68 @@
+\chapter{Background}
+\label{ch:background}
+
+This chapter collects the reinforcement learning results the rest of the report relies on. The notation follows \citet{sutton2018reinforcement}. Everything here is standard; the purpose is to fix the exact forms that the implementation uses, including two details that are easy to get wrong (the truncated GAE sum and the treatment of shaping at terminal states).
+
+\section{Episodic Markov decision processes}
+
+An episodic MDP is a tuple $(\mathcal{S},\mathcal{A},P,r,\gamma,H)$ with a state space $\mathcal{S}$, an action space $\mathcal{A}$, transition kernel $P(s'\mid s,a)$, reward $r(s,a,s')$, discount $\gamma\in[0,1]$ and horizon $H$. In our setting the set of legal actions depends on the state, so we write $\mathcal{A}(s)\subseteq\mathcal{A}$ for the actions available in $s$. A stochastic policy $\pi_\theta(a\mid s)$ with parameters $\theta$ induces trajectories $\tau=(s_0,a_0,r_0,\dots,s_T)$, and the learning objective is the expected return
+\begin{equation}
+  J(\theta)=\E_{\tau\sim\pi_\theta}\Big[\sum_{t=0}^{T-1}\gamma^t r_t\Big].
+\end{equation}
+The state-value and action-value functions are $V^\pi(s)=\E[\sum_{k\ge 0}\gamma^k r_{t+k}\mid s_t=s]$ and $Q^\pi(s,a)=\E[\sum_{k\ge0}\gamma^k r_{t+k}\mid s_t=s,a_t=a]$, and the advantage is $A^\pi(s,a)=Q^\pi(s,a)-V^\pi(s)$.
+
+\section{Policy gradients, baselines and actor--critic methods}
+
+The likelihood-ratio form of the policy gradient \citep{williams1992simple} is
+\begin{equation}
+  \nabla_\theta J(\theta)=\E_{\tau\sim\pi_\theta}\Big[\sum_{t}\nabla_\theta\log\pi_\theta(a_t\mid s_t)\,\big(G_t-b(s_t)\big)\Big],
+  \qquad G_t=\sum_{k\ge t}\gamma^{k-t}r_k ,
+  \label{eq:reinforce}
+\end{equation}
+where any baseline $b(s_t)$ that does not depend on $a_t$ leaves the estimator unbiased and can reduce its variance. REINFORCE with a learned baseline uses $b(s_t)=V_\phi(s_t)$, a critic fitted by regression on Monte-Carlo returns. Actor--critic methods such as A2C/A3C \citep{mnih2016asynchronous} replace $G_t$ by bootstrapped estimates built from the critic, trading variance for bias.
+
+\paragraph{Generalised advantage estimation.} GAE \citep{schulman2016gae} interpolates between these two extremes with a single parameter $\lambda\in[0,1]$. With the temporal-difference residual $\delta_t=r_t+\gamma V_\phi(s_{t+1})-V_\phi(s_t)$, the estimator for a trajectory that terminates at step $T$ is
+\begin{equation}
+  \hat A_t=\sum_{l=0}^{T-t-1}(\gamma\lambda)^l\,\delta_{t+l},
+  \qquad V_\phi(s_T)=0 ,
+  \label{eq:gae}
+\end{equation}
+computed backwards as $\hat A_t=\delta_t+\gamma\lambda\hat A_{t+1}$. Setting $\lambda=0$ gives the one-step TD advantage, which has low variance but is biased whenever $V_\phi$ is inaccurate; $\lambda=1$ gives $G_t-V_\phi(s_t)$, which is unbiased but has the full Monte-Carlo variance. \citet{schulman2016gae} point out the asymmetry that matters for short episodes: $\gamma<1$ biases the gradient regardless of the critic, whereas $\lambda<1$ introduces bias only through critic error. The truncated form printed in the PPO paper carries the exponent $T-t+1$ on its last term, which is inconsistent with the summation index; Equation~\eqref{eq:gae} is the consistent version and is what our code implements. The critic is trained on the targets $V^{\mathrm{targ}}_t=\hat A_t+V_\phi(s_t)$.
+
+\section{Proximal policy optimisation}
+
+PPO \citep{schulman2017ppo} reuses each batch of on-policy data for several epochs of minibatch updates while keeping the new policy close to the one that collected the data. With the probability ratio $\rho_t(\theta)=\pi_\theta(a_t\mid s_t)/\pi_{\theta_{\mathrm{old}}}(a_t\mid s_t)$ the clipped surrogate objective is
+\begin{equation}
+  L^{\mathrm{CLIP}}(\theta)=\hat\E_t\Big[\min\big(\rho_t(\theta)\hat A_t,\ \operatorname{clip}(\rho_t(\theta),1-\epsilon,1+\epsilon)\,\hat A_t\big)\Big],
+  \label{eq:ppo}
+\end{equation}
+to which an entropy bonus $c_H\,\hat\E_t[\mathcal{H}(\pi_\theta(\cdot\mid s_t))]$ is added. In the original ablation over seven tasks, $\epsilon=0.2$ gave the best normalised score (0.82, against 0.76 for $\epsilon=0.1$ and 0.70 for $\epsilon=0.3$), and the clipped objective outperformed an adaptive KL penalty \citep{schulman2017ppo}.
+
+Two large implementation studies showed that code-level choices can matter as much as the choice of algorithm \citep{engstrom2020implementation,andrychowicz2021matters}. The findings we adopt are: separate policy and value networks (better than a shared trunk in four of five environments), no PPO-style clipping of the value loss (which hurt performance at every threshold tried), Adam with a decaying learning rate, global gradient-norm clipping, and a small initial scale for the policy output layer. We also monitor the approximate KL divergence $\hat\E_t[(\rho_t-1)-\log\rho_t]$ and the clip fraction, and stop the epoch loop early when the KL exceeds a target.
+
+\section{Critic-free group baselines}
+
+Group Relative Policy Optimisation (GRPO) \citep{shao2024deepseekmath} removes the critic. For each question it samples $G$ episodes with returns $R_1,\dots,R_G$ and assigns every step of episode $i$ the advantage
+\begin{equation}
+  \hat A_i=\frac{R_i-\operatorname{mean}(R_{1:G})}{\operatorname{std}(R_{1:G})+\varepsilon},
+  \label{eq:grpo}
+\end{equation}
+which is then used inside the clipped surrogate~\eqref{eq:ppo}. The leave-one-out baseline of RLOO \citep{ahmadian-etal-2024-back} gives $\frac{G}{G-1}(R_i-\bar R)$, i.e.\ mean-centred GRPO up to a constant factor. \citet{liu2025understanding} showed that GRPO's per-output length normalisation creates a length bias and that dividing by the group standard deviation up-weights questions whose rewards vary little; their Dr.~GRPO variant removes both normalisations. Two consequences for a hop-level policy are that losses should be averaged over all steps of a batch rather than normalised per episode, and that groups in which every episode receives the same return contribute no gradient at all. We report the frequency of such degenerate groups.
+
+\section{Potential-based reward shaping}
+
+Sparse terminal rewards slow learning, and shaping adds an auxiliary reward $F(s,a,s')$ to speed it up. \citet{ng1999policy} proved that every optimal policy of the original MDP remains optimal under shaping if and only if $F$ has the potential-based form
+\begin{equation}
+  F(s,a,s')=\gamma\,\Phi(s')-\Phi(s)
+  \label{eq:shaping}
+\end{equation}
+for some function $\Phi:\mathcal{S}\to\mathbb{R}$, with the absorbing terminal state assigned a fixed potential (zero) in episodic tasks. The reason is that the shaping terms telescope: along any trajectory that ends in the terminal state, $\sum_t\gamma^tF(s_t,a_t,s_{t+1})=-\Phi(s_0)$, a constant that does not depend on the actions taken. Shaping of this form can still change the speed of learning, because an actor--critic method with $\lambda<1$ sees the intermediate terms. Two common alternatives are \emph{not} potential-based and do change the optimum: a bonus paid only at the end of the episode, and per-step progress rewards without the terminal correction. Chapter~\ref{ch:formulation} uses this distinction directly.
+
+\section{Pointer-style policies over variable action sets}
+
+When the set of legal actions changes from state to state, the policy can be written as a softmax over a score $u_\theta(s,a)$ restricted to $\mathcal{A}(s)$:
+\begin{equation}
+  \pi_\theta(a\mid s)=\frac{\exp u_\theta(s,a)\,\mathbb{1}[a\in\mathcal{A}(s)]}{\sum_{a'\in\mathcal{A}(s)}\exp u_\theta(s,a')}.
+  \label{eq:maskedsoftmax}
+\end{equation}
+Pointer networks \citep{vinyals2015pointer} introduced this kind of content-based scoring, where each candidate is represented by its own features rather than by a fixed output index; \citet{chandak2020sas} study MDPs with stochastic action availability and use exactly this masked parameterisation. \citet{huang2022closer} showed that masking is a state-dependent differentiable transformation of the logits, so the policy-gradient theorem still holds and masked logits receive zero gradient. Their experiments also show two practical points: invalid-action penalties scale poorly compared with masking, and applying the mask when sampling but not when recomputing probabilities for the PPO ratio makes the KL divergence blow up. Our implementation therefore stores the candidate set and its mask with every transition and re-applies it during the update, and it uses a large finite negative logit ($-10^9$) instead of $-\infty$ so that entropy computations stay finite.

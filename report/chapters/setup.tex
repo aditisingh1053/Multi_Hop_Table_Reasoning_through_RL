@@ -1,0 +1,49 @@
+\chapter{Experimental Setup}
+\label{ch:setup}
+
+\section{Data}
+
+All experiments use HybridQA. Training and validation questions come from the official training set, split by table as described in Section~\ref{sec:datapipe}, and every reported test number is on the complete official dev set of \nTest{} questions, of which \nTestTypeTable{} have their answer in a table cell and \nTestTypePassage{} in a linked passage according to the official reference file; the remaining questions have computed answers and count only in the overall scores. Table~\ref{tab:datastats} gives the graph statistics. \input{generated/setup_data}
+
+\section{Reader}
+\label{sec:setup-reader}
+
+The frozen reader is \texttt{deepset/minilm-uncased-squad2}, a 33M-parameter MiniLM model fine-tuned on SQuAD~2.0 (76.2 EM / 79.6 F1 on the SQuAD~2.0 dev set according to its model card). It was not trained on HybridQA. Each selected entity is read together with the question with a maximum input length of 384 tokens and a stride of 128 tokens for longer passages; spans are limited to 30 tokens and chosen among the 20 best start and end positions, and the null-adjusted score of the best span decides between entities (Section~\ref{sec:reward}). \input{generated/setup_reader} For the transfer experiment, the selectors trained with this reader are re-evaluated with \texttt{deepset/roberta-base-squad2} (124M parameters, 79.9 EM / 83.0 F1 on SQuAD~2.0 dev), which is never used during training.
+
+\section{Selectors compared}
+
+\paragraph{Without learning.} \emph{Random walk} picks uniformly from the environment's candidate set for a fixed number of steps $k\in\{2,3\}$ (three seeds). \emph{BM25}, \emph{dense} and \emph{hybrid top-$k$} select the $k\in\{1,2,3\}$ entities with the highest BM25 score, embedding cosine or hybrid score among all rows and passages of the question, ignoring the graph; dense top-$k$ is the retrieval step of TableRAG-style pipelines. \emph{Greedy rank-then-hop} selects the row with the highest hybrid score and then the linked passage of that row with the highest hybrid score, the decision rule of HYBRIDER and of graph-traversal pipelines without their trained rankers. The \emph{oracle} returns the traced gold path for which the frozen reader obtains the highest F1; it uses the gold answer and is an upper bound, not a baseline.
+
+\paragraph{Learned.} \emph{Behaviour cloning} (Section~\ref{sec:bc}); \emph{PPO + GAE}, warm-started from behaviour cloning (Section~\ref{sec:ppo}); \emph{REINFORCE} with a learned baseline and \emph{GRPO} with four episodes per question, both warm-started from the same cloned policy (Section~\ref{sec:otheralgos}); and \emph{PPO without warm start}, trained from a random initialisation with an actor learning rate of $3\times10^{-4}$. All learned selectors act greedily at test time.
+
+\section{Metrics}
+
+Answer quality is measured with the official HybridQA exact match (EM) and token F1, overall and separately for in-table and in-passage questions. Evidence quality is measured by answer recall (the normalised answer string occurs in the selected evidence), gold-path coverage (some traced gold path is entirely contained in the evidence) and the rate of right answers from wrong evidence (exact match although no traced gold path is covered). Cost is measured by the number of selected entities and the number of words passed to the reader. All percentages are over all dev questions except gold-path coverage and the right-from-wrong rate, which are over the questions that have at least one traced gold path.
+
+\section{Training details and statistics}
+
+Table~\ref{tab:hparams} lists the hyperparameters. They were set from the recommendations collected in Chapter~\ref{ch:background} and were not tuned on the test set. \input{generated/setup_pilot} \input{generated/setup_seeds} Pairwise differences are tested with a paired bootstrap over dev questions (10{,}000 resamples) on per-question scores averaged over seeds, and we report the probability of improvement, the fraction of pairs of runs in which the first method scores higher \citep{agarwal2021deep}. All experiments ran on a single laptop CPU (Intel Core i7-1360P, 16~GB RAM, no GPU) with Python~3.12, PyTorch~2.3.1 and \texttt{transformers}~4.57.1.
+
+\begin{table}[ht]
+\centering
+\small
+\caption{Hyperparameters of the main configuration.}
+\label{tab:hparams}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Group & Setting & Value \\
+\midrule
+Environment & horizon $H$ / candidate cap $K$ / global passages $k$ & 3 / 48 / 5 \\
+Reward & answer metric; entity cost $c$; shaping $\kappa$; bonus $\lambda_{\mathrm{ev}}$; $\gamma$ & F1; 0.02; 0.5; 0; 1 \\
+Networks & hidden size; actor / critic parameters & 256; 762{,}114 / 728{,}065 \\
+Behaviour cloning & epochs; learning rate; minibatch & 8; $10^{-3}$ (linear decay); 256 \\
+PPO & iterations $\times$ episodes per iteration & $40\times1{,}024$ \\
+ & epochs; minibatch; clip $\epsilon$; GAE $\lambda$ & 4; 256; 0.2; 0.95 \\
+ & actor / critic learning rate (Adam, linear decay) & $10^{-4}$ / $10^{-3}$ \\
+ & entropy coefficient; gradient clip; target KL & 0.01; 0.5; 0.03 \\
+ & critic-only warm-up iterations; validation every & 5; 5 iterations \\
+REINFORCE & actor learning rate; updates per iteration & $10^{-3}$; 1 (full batch) \\
+GRPO & questions $\times$ episodes per iteration; epochs & $256\times4$; 4 \\
+\bottomrule
+\end{tabular}
+\end{table}

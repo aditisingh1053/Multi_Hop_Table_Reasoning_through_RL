@@ -1,0 +1,111 @@
+\documentclass[11pt,a4paper,oneside]{report}
+
+% ---------------------------------------------------------------------------
+% Fill in before submission
+\newcommand{\ReportAuthors}{Author Name (Roll No.)\\Author Name (Roll No.)}
+\newcommand{\ReportCourse}{Optimization Methods for Machine Learning}
+\newcommand{\ReportGuide}{Course Instructor}
+\newcommand{\ReportDept}{Department Name}
+\newcommand{\ReportInstitute}{Institute Name}
+\newcommand{\ReportDate}{October 2026}
+% ---------------------------------------------------------------------------
+
+\usepackage{iftex}
+\ifXeTeX
+  \usepackage{fontspec}   % Latin Modern (OpenType) under XeLaTeX / Tectonic
+\else
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{lmodern}
+\fi
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb,amsthm,bm}
+\usepackage{booktabs,tabularx,multirow,array}
+\usepackage{graphicx}
+\usepackage{caption,subcaption}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,calc,shapes.geometric}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[hidelinks]{hyperref}
+\usepackage{setspace}
+\usepackage{fancyhdr}
+
+\setstretch{1.15}
+\setlist{itemsep=2pt,topsep=4pt}
+\captionsetup{font=small,labelfont=bf}
+\setlength{\parskip}{3pt}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\nouppercase{\leftmark}}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\fancypagestyle{plain}{\fancyhf{}\fancyfoot[C]{\thepage}\renewcommand{\headrulewidth}{0pt}}
+
+\theoremstyle{plain}
+\newtheorem{proposition}{Proposition}[chapter]
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[chapter]
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}[chapter]
+
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\STOP}{\textsc{stop}}
+\newcommand{\cand}{\mathcal{C}}
+\newcommand{\gold}{\mathcal{G}}
+\newcommand{\evid}{E}
+\input{generated/stats}
+
+\begin{document}
+
+% ------------------------------- title page -------------------------------
+\begin{titlepage}
+  \centering
+  \vspace*{1.2cm}
+  {\LARGE\bfseries Learning Multi-Hop Table Reasoning\\[4pt] through Reinforcement Learning\par}
+  \vspace{0.5cm}
+  {\Large PPO-Based Entity Selection for Decision Making\par}
+  \vspace{1.2cm}
+  {\large Project Report\par}
+  \vspace{0.3cm}
+  {\normalsize submitted for the course\\ \emph{\ReportCourse}\par}
+  \vspace{1.5cm}
+  {\large \ReportAuthors\par}
+  \vspace{1.2cm}
+  {\normalsize Under the guidance of\\ \ReportGuide\par}
+  \vfill
+  {\normalsize \ReportDept\\ \ReportInstitute\\[6pt] \ReportDate\par}
+\end{titlepage}
+
+\pagenumbering{roman}
+\input{chapters/abstract}
+\tableofcontents
+\listoffigures
+\listoftables
+\clearpage
+\pagenumbering{arabic}
+
+\input{chapters/introduction}
+\input{chapters/background}
+\input{chapters/literature}
+\input{chapters/gaps}
+\input{chapters/formulation}
+\input{chapters/method}
+\input{chapters/implementation}
+\input{chapters/setup}
+\input{chapters/results}
+\input{chapters/discussion}
+\input{chapters/conclusion}
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\appendix
+\input{chapters/appendix}
+
+\end{document}

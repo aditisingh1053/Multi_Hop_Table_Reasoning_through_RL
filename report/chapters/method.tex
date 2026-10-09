@@ -1,0 +1,131 @@
+\chapter{Method}
+\label{ch:method}
+
+\section{Representing states and candidates}
+\label{sec:features}
+
+All text is embedded once, before training, with a frozen sentence encoder (all-MiniLM-L6-v2, 384 dimensions, mean pooling, unit norm; \citealp{reimers-gurevych-2019-sentence,wang2020minilm}). Because the encoder never changes, embeddings are computed per table and cached, and no gradient ever passes through a transformer during training. Lexical scores use BM25 \citep{robertson2009bm25} with $k_1=1.2$ and $b=0.75$ and document frequencies estimated on the entities of the training tables only.
+
+The state vector concatenates the question embedding, the mean embedding of the selected evidence, the embedding of the most recently selected entity (zero vectors when nothing has been selected) and eight scalars, giving $3\times384+8=1{,}160$ dimensions. Each candidate is described by its 384-dimensional embedding and fourteen scalar features. Both sets of scalars are listed in Table~\ref{tab:features}. None of them refers to a column position or an entity identifier, so the same policy applies to tables with unseen schemas, the representation problem that limits the knowledge-graph walkers of Section~\ref{sec:lit-graph}.
+
+\begin{table}[ht]
+\centering
+\small
+\caption{Scalar features. All are computed from the question, the table and the current evidence; none uses the answer.}
+\label{tab:features}
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{4.1cm}X@{}}
+\toprule
+\multicolumn{2}{@{}l}{\textit{Candidate features (14)}} \\
+type (2) & one-hot: row or passage \\
+cosine, BM25 & $\cos(\mathbf{q},\mathbf{a})$; BM25 normalised by its maximum over the question's entities \\
+rank in type & $1-\text{rank}/n$ among entities of the same type by hybrid score \\
+linked to evidence / to last & whether $a$ is a graph neighbour of any selected entity / of the last one \\
+row position & $i/(R-1)$ for row $i$ (many questions use ordinals) \\
+question overlap, novel overlap & fraction of question content words in $a$; fraction not yet covered by the evidence \\
+number match & whether a number in the question occurs in $a$ \\
+global top-$k$ passage & whether $a$ is one of the five best-matching passages \\
+max cosine to evidence & largest $\cos(\mathbf{a},\mathbf{e})$ over selected $e$ (redundancy) \\
+degree & number of links, normalised \\
+\midrule
+\multicolumn{2}{@{}l}{\textit{State scalars (8)}} \\
+progress & $t/H$; selected rows$/H$; selected passages$/H$ \\
+coverage & fraction of question content words covered by the evidence \\
+candidate summary & maximum cosine and maximum normalised BM25 over current candidates \\
+last type & whether the last selected entity is a row or a passage \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Policy and value networks}
+\label{sec:arch}
+
+\paragraph{Actor.} Let $\mathbf{s}$ be the state vector and $(\mathbf{e}_a,\mathbf{x}_a)$ the embedding and features of candidate $a$. Two two-layer ReLU networks map them to 256-dimensional vectors, $\mathbf{h}=f_s(\mathbf{s})$ and $\mathbf{g}_a=f_c([\mathbf{e}_a;\mathbf{x}_a])$, and a pointer-style scorer compares them:
+\begin{equation}
+  u(a)=\mathbf{w}^\top\operatorname{ReLU}\big(W[\mathbf{h};\mathbf{g}_a;\mathbf{h}\odot\mathbf{g}_a]+\mathbf{b}\big),\qquad
+  u(\STOP)=f_{\mathrm{stop}}([\mathbf{h};\mathbf{s}_{\mathrm{scalar}}]).
+\end{equation}
+The policy is the masked softmax of Equation~\eqref{eq:maskedsoftmax} over the valid candidates and, from the second step on, \STOP. The elementwise product lets the scorer express similarity between state and candidate directly, and giving \STOP{} its own head follows M-Walk \citep{shen2018mwalk}. Candidates are padded to $K=48$ per state; padded slots, and \STOP{} at $t=0$, receive the logit $-10^9$.
+
+\paragraph{Critic.} The value network has its own copies of $f_s$ and $f_c$ and estimates $V_\phi(s)$ from $[\mathbf{h}';\operatorname{mean}_a\mathbf{g}'_a;\max_a\mathbf{g}'_a]$, so it sees a permutation-invariant summary of the current candidates. Separate actor and critic networks follow the recommendation of \citet{andrychowicz2021matters}. The actor has 762{,}114 parameters and the critic 728{,}065. All linear layers use orthogonal initialisation with gain $\sqrt2$, except the output layers of the actor (gain $0.01$) and the critic (gain $1$) \citep{andrychowicz2021matters,engstrom2020implementation}.
+
+\section{Behaviour cloning on set-valued targets}
+\label{sec:bc}
+
+Reinforcement learning from a random policy wastes most of its early episodes, and the graph-walking and search literature consistently reports that a supervised warm start is needed \citep{xiong2017deeppath,sun2026sogr1}. We clone an oracle built from the traced gold paths. The canonical oracle order is: a gold row; then, if the answer is in a linked passage, a gold passage of that row; then \STOP. Because several gold paths may exist, the targets at each step form a set $\mathcal{T}_t$: at the first step, all gold rows; after a row $i$ has been chosen, the gold passages linked from $i$, together with \STOP{} if $(i)$ itself is a gold path; after a gold passage, \STOP. When there are several gold rows the trajectory is continued from the one with the highest hybrid score. \STOP{} is labelled positive only after a gold path is complete, as in the end-of-evidence scheme of \citet{asai2020learning}. The loss is the negative log of the total probability of the acceptable actions,
+\begin{equation}
+  \mathcal{L}_{\mathrm{BC}}(\theta)=-\sum_t\log\sum_{a\in\mathcal{T}_t}\pi_\theta(a\mid s_t),
+\end{equation}
+which does not force the policy to pick one of several equally plausible traced locations. The cloned policy is trained for eight epochs with Adam \citep{kingma2015adam} (learning rate $10^{-3}$, linearly decayed, minibatch 256, gradient-norm clip 1.0), and the epoch with the best validation F1 under the frozen reader is kept.
+
+Behaviour cloning has two known weaknesses that motivate the RL stage. It imitates the tracer, including its mistakes, and it is trained only on states the oracle visits, so a single wrong hop can lead it into states it has never seen; \citet{ross2011reduction} show that such compounding errors can grow quadratically with the horizon. PPO optimises the reader's actual answer quality on the policy's own state distribution.
+
+\section{PPO with GAE}
+\label{sec:ppo}
+
+Algorithm~\ref{alg:ppo} gives the training loop. Each iteration samples 1{,}024 training questions, runs one stochastic episode for each, asks the frozen reader for the answers (from the cache wherever possible), computes per-step rewards with Equation~\eqref{eq:reward} and advantages with GAE (Equation~\eqref{eq:gae}, $\gamma=1$, $\lambda=0.95$), and then performs four epochs of minibatch updates of the clipped objective~\eqref{eq:ppo} with $\epsilon=0.2$ and an entropy coefficient of 0.01. Advantages are normalised over the batch. The critic is regressed on $V^{\mathrm{targ}}_t=\hat A_t+V_\phi(s_t)$ without value clipping. Both networks use Adam with $\epsilon=10^{-5}$, linearly decayed learning rates ($10^{-4}$ for the actor, $10^{-3}$ for the critic) and gradient-norm clipping at 0.5. The epoch loop stops early once the approximate KL divergence of an epoch exceeds $1.5\times0.03$.
+
+Two details are specific to our setting. First, the actor starts from the cloned policy while the critic starts from scratch; to stop an untrained critic from producing meaningless advantages that would undo the warm start, the first five iterations update only the critic. Second, the candidate set and its mask are stored with each transition and re-applied when log-probabilities are recomputed, as required for a correct importance ratio \citep{huang2022closer}. Every five iterations the greedy policy is evaluated on the validation set, and the iterate with the best validation F1 is kept (the initial cloned policy is not eligible, so that the reported model is always a PPO iterate).
+
+\begin{algorithm}[t]
+\caption{PPO for entity selection (one seed)}
+\label{alg:ppo}
+\begin{algorithmic}[1]
+\Require cloned actor $\pi_\theta$, critic $V_\phi$, frozen reader $\rho$ with cache, training questions $\mathcal{D}$
+\For{iteration $k=1,\dots,40$}
+  \State sample 1{,}024 questions from $\mathcal{D}$ (without replacement within a pass)
+  \State run one episode per question with $a_t\sim\pi_\theta(\cdot\mid s_t)$ over the masked candidate set; store $(s_t,\cand_t,a_t,\log\pi_\theta(a_t\mid s_t))$
+  \State read every new (question, entity) pair with $\rho$; compute $\rho(q,\evid_T)$ and the rewards $r_t$ (Eq.~\ref{eq:reward})
+  \State compute $V_\phi(s_t)$, GAE advantages $\hat A_t$ and targets $V^{\mathrm{targ}}_t$; normalise $\hat A_t$ over the batch
+  \For{epoch $=1,\dots,4$}
+    \For{each minibatch of 256 transitions}
+      \State update $\phi$ on $\tfrac12(V_\phi(s_t)-V^{\mathrm{targ}}_t)^2$
+      \If{$k>5$ \textbf{and} KL limit not reached}
+        \State update $\theta$ on $-L^{\mathrm{CLIP}}-0.01\,\mathcal{H}$, recomputing $\pi_\theta$ with the stored masks
+      \EndIf
+    \EndFor
+    \State stop updating $\theta$ in this iteration if the epoch's mean approximate KL exceeds $0.045$
+  \EndFor
+  \State every 5 iterations: greedy evaluation on the validation set; keep the best iterate
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+\section{Comparison optimisers}
+\label{sec:otheralgos}
+
+To answer RQ4 we train two other optimisers on exactly the same rewards, data, initialisation and evaluation.
+
+\paragraph{REINFORCE with a learned baseline.} Advantages are Monte-Carlo returns minus the critic's value, $\hat A_t=G_t-V_\phi(s_t)$, normalised over the batch, and the actor takes a single gradient step per iteration on the whole batch, without ratio or clipping. This is the vanilla policy gradient of Equation~\eqref{eq:reinforce}; since it takes one step where PPO takes about forty, its actor learning rate is $10^{-3}$ instead of $10^{-4}$. The critic and the warm-up are as for PPO.
+
+\paragraph{GRPO.} Each iteration samples 256 questions and four episodes per question (the same 1{,}024 episodes per iteration), uses the group-relative advantage of Equation~\eqref{eq:grpo} for every step of an episode, and optimises the same clipped objective for four epochs, without a critic and without a KL penalty to a reference policy. The loss is averaged over all steps of a minibatch rather than normalised per episode, which avoids the length bias described by \citet{liu2025understanding}. By Proposition~\ref{prop:grpo-blind}, potential-based shaping has no effect on GRPO; we record the fraction of groups whose four returns are identical, since those contribute no gradient.
+
+\section{Integration as a drop-in selector}
+\label{sec:integration}
+
+The selector exposes one function: given a question, a table and its linked passages, it returns an ordered list of evidence texts. Figure~\ref{fig:pipeline} shows where this function sits. In HYBRIDER-style pipelines it replaces the linking, ranking and hopping stages; in TableRAG-style pipelines it replaces top-$k$ schema and cell retrieval; in Chain-of-Table, Dater and Binder it would act as a pre-filter that decides which rows the LLM sees; in ODYSSEY it would replace the threshold-and-BFS pruning of the hybrid graph. In every case the reader or reasoner downstream is unchanged. The preliminary study uses a frozen extractive reader for this role because it can be run thousands of times per minute from a cache; Section~\ref{sec:workplan} plans the experiments with LLM reasoners.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+  font=\small, node distance=0.55cm and 0.55cm,
+  box/.style={draw, rounded corners=3pt, align=center, minimum height=1.0cm, inner sep=4pt},
+  learn/.style={box, fill=blue!8, very thick},
+  frozen/.style={box, fill=gray!10},
+  >={Stealth[length=2mm]}]
+  \node (in) [box, text width=2.1cm] {question\\table\\linked passages};
+  \node (graph) [frozen, right=of in, text width=2.0cm] {entity graph\\+ cached\\embeddings};
+  \node (cand) [frozen, right=of graph, text width=1.9cm] {candidate\\generator\\($\cand_t$)};
+  \node (pol) [learn, right=of cand, text width=2.0cm] {pointer\\policy $\pi_\theta$\\(+ STOP)};
+  \node (reader) [frozen, right=of pol, text width=1.9cm] {frozen\\reader $\rho$};
+  \node (ans) [box, right=of reader, text width=1.1cm] {answer};
+  \draw[->] (in) -- (graph);
+  \draw[->] (graph) -- (cand);
+  \draw[->] (cand) -- (pol);
+  \draw[->] (pol) -- node[above, font=\footnotesize]{$\evid_T$} (reader);
+  \draw[->] (reader) -- (ans);
+  \draw[->] (pol.south) .. controls +(0,-0.9) and +(0,-0.9) .. node[below, font=\footnotesize]{select $a_t$, update $\evid_t$} (cand.south);
+  \draw[->, dashed] (ans.north) .. controls +(0,1.1) and +(0,1.1) .. node[above, font=\footnotesize]{reward: F1 $-\,c|\evid|$ (+ evidence term), training only} (pol.north);
+\end{tikzpicture}
+\caption{The selector as a module. Only the shaded policy is trained; the graph builder, the candidate generator, the encoder and the reader are fixed, so the selector can replace the selection step of an existing pipeline without touching its reasoner.}
+\label{fig:pipeline}
+\end{figure}

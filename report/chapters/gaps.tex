@@ -1,0 +1,65 @@
+\chapter{Critical Analysis and Research Gaps}
+\label{ch:gaps}
+
+\section{The most relevant papers}
+
+Table~\ref{tab:top12} ranks the twelve papers that constrain the design most. The ranking weighs how many design decisions of this project a paper bears on, either as a precedent to extend or as a result to beat. The first six are learned selectors; the next two define the environment and the pipeline a selector would plug into; the last four supply the policy architecture, the multi-table setting and the evidence on optimisers and rewards.
+
+\begin{table}[ht]
+\centering
+\footnotesize
+\caption{Ranked shortlist of the most relevant prior work, with what each paper contributes and what it leaves open.}
+\label{tab:top12}
+\begin{tabularx}{\textwidth}{@{}c>{\raggedright\arraybackslash}p{3.2cm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X@{}}
+\toprule
+\# & Paper & Why it matters here & What it does not do \\
+\midrule
+1 & \citet{jose2024qatexttablesdrl} & Only RL controller for table--text QA; its reward is ours without the evidence term & Module-level actions over averaged embeddings; one run per setting; tied the always-retrieve-text heuristic \\
+2 & s3 \citep{jiang2025s3} & Frozen generator, explicit selection and stop, PPO, baseline-relative reward & Text only; no evidence or cost term \\
+3 & StepSearch \citep{wang2025stepsearch} & PPO + GAE with a gold-evidence gain reward and answer F1 & Text only; the LLM both searches and answers; no explicit stop \\
+4 & Learning to Reduce \citep{lee2024learningtoreduce} & PPO-trained table evidence selector for a frozen LLM; 87\% zero-shot column recall on HybridQA & One shot, one table, no passages; reward on selection rather than answer \\
+5 & Table-R1, region \citep{wu2025tabler1region} & Rewards the rows and columns the model attends to, with a decaying evidence weight & One region per answer, inside one table \\
+6 & Reasoning-Table \citep{lei2025reasoningtable} & Answer-gated cell-evidence reward, trained on HybridQA and OTT-QA & Evidence is cited, not selected step by step; gold table given on OTT-QA \\
+7 & HybridQA / HYBRIDER \citep{chen-etal-2020-hybridqa} & The environment, the traced evidence, and the greedy rank-then-hop slot to replace & Independently trained stages on noisy labels; greedy top-1; no stop \\
+8 & ODYSSEY \citep{agarwal-etal-2025-hybrid} & Hybrid table--text graph pruned by fixed rules; 14 of 41 errors from selection & Zero-shot; nothing is learned; 500-question samples \\
+9 & MINERVA \citep{das2018minerva} with \citet{lin2018multihop} & MDP template, order-invariant pointer, shaping, action dropout, spurious paths & Knowledge graphs with identifier embeddings; REINFORCE; no explicit stop \\
+10 & M-Walk \citep{shen2018mwalk} & Explicit STOP score; set-like state & Knowledge graphs; MCTS + Q-learning; binary reward \\
+11 & MURRE \citep{zhang2025murre} with MMQA \citep{wu2025mmqa} & Hop-wise multi-table retrieval with an LLM stop; leaves downstream feedback to future work & No learning from answers or SQL; MMQA has no training split \\
+12 & Search-R1 \citep{jin2025searchr1} with \citet{jin2025empirical} & PPO versus GRPO stability; evidence that naive retrieval rewards may not help & LLM token policies over text; outcome reward only \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Why the closest precedent did not learn}
+
+\citet{jose2024qatexttablesdrl} is the paper our project has to improve on, so it is worth being precise about its failure. Its agent had three actions, a reward that arrived only at the end of the episode, no supervised warm start and a state that averaged the embeddings of whatever had been retrieved. With actions this coarse, the value of each action barely depends on the question, so the optimal response to a terminal reward is close to whichever action is best on average, and that is exactly the policy the agent converged to. The paper itself points at the missing ingredients. The authors observe that ``table retrieval proved noisy \ldots as tables often contain excessive data with relevant information typically in a single row'': action sequences that started with tables scored 4--8 F1 against 16--19 for sequences that started with text, and they suggest splitting tables into rows. Three levers were left unused: finer actions (rows and passages instead of modules), a denser evidence signal, and a warm start. Each of them corresponds to a design decision in Chapters~\ref{ch:formulation} and~\ref{ch:method}, and our ablations measure them separately.
+
+\section{Research gaps}
+
+Every statement that something has not been done rests on the search described in Chapter~\ref{ch:literature}, through October 2026, not on proof. For each gap we give the evidence and say how this project responds; Table~\ref{tab:gapmap} in Chapter~\ref{ch:implementation} maps the responses to concrete implementation decisions and checks.
+
+\paragraph{G1. No RL method selects table entities one at a time with a learned stop.} \citet{jose2024qatexttablesdrl} act on modules. Learning to Reduce, the region-based Table-R1 and Reasoning-Table select once, inside one table. OpenTable-R1 selects whole tables through search queries, with one gold table per question. The graph walkers work on curated graphs with identifier embeddings, and the supervised table--text selectors learn from answer-location labels through independently trained stages. \emph{Response:} an MDP whose actions are individual rows and linked passages, plus an explicit STOP, over a graph built per question from the table and its hyperlinks (Chapter~\ref{ch:formulation}).
+
+\paragraph{G2. No RL selector has been shown to beat a fixed heuristic in table--text QA.} The only attempt tied the best fixed action sequence, with one run per configuration and no variance estimate. The LLM graph frameworks report results on 200--500-question samples. \emph{Response:} all learned selectors and all heuristics are evaluated with the same frozen reader on the full 3{,}466-question HybridQA dev set, against random, lexical, dense and hybrid top-$k$ retrieval, the greedy rank-then-hop heuristic, the behaviour-cloned policy and an oracle, with five seeds for the main methods and paired bootstrap intervals.
+
+\paragraph{G3. Stopping is hand-coded everywhere.} HYBRIDER takes two greedy steps, MITQA keeps five rows, Chain-of-Skills fixes budgets, ODYSSEY stops at depth three, MMQA's retriever stops at zero column overlap and MURRE asks an LLM. Search agents show that the stop decision is a failure mode in its own right \citep{wu2025searchwisely}, yet no table paper reports how accuracy trades against evidence size under a learned stop. \emph{Response:} STOP is an action of the policy, priced by a per-entity cost; we sweep that cost and report the distribution of evidence sizes and the accuracy--length trade-off against fixed-$k$ baselines.
+
+\paragraph{G4. The value of an evidence reward is contested, and its two forms have never been separated.} \citet{jin2025empirical} found no benefit from intermediate retrieval rewards and harm at large weights, while StepSearch, IGPO and KG-R1 report gains. Table-R1 decays its region reward, Reasoning-Table gates it on the answer and Learning to Reduce rewards the selection alone. None separates potential-based shaping, which cannot change the optimal policy, from a terminal evidence bonus, which can \citep{ng1999policy}. HybridQA adds its own difficulty: the traced evidence is noisy and often multi-valued. \emph{Response:} one evidence signal, gold-path recall $\psi$, used either as a potential or as a terminal bonus, compared against no evidence term; the rate of correct answers obtained without covering any traced gold path is reported separately.
+
+\paragraph{G5. PPO with a learned critic and GAE is untested on small pointer policies.} Every PPO-versus-GRPO comparison we found uses LLM token policies (Search-R1, KG-R1, Graph-R1); the classic walkers use REINFORCE or tree search; the recent table papers almost all use GRPO variants. Critic-free methods also have a structural blind spot: potential-based shaping adds the same total to every episode of a group, so a group-relative advantage cannot see it (Proposition~\ref{prop:grpo-blind}). \emph{Response:} PPO with GAE, REINFORCE with a learned baseline and GRPO are trained on identical rewards, data and seeds; we report learning curves, critic explained variance and the fraction of degenerate GRPO groups, and we vary the GAE $\lambda$.
+
+\paragraph{G6. No paper swaps a learned selector into an existing framework while holding the reasoner fixed.} Chain-of-Table selects greedily with an LLM, TableRAG by embedding top-$k$, Dater by prompting, Binder implicitly in a program, ODYSSEY by breadth-first search and HYBRIDER by greedy classifiers. Learning to Reduce, a one-shot reduction for a frozen GPT-4, is the closest attempt. \emph{Response:} the selector is a separate module with a fixed interface (question and table in, ordered evidence list out). In the preliminary study the reasoner is a frozen extractive reader, and the selection step is swapped between TableRAG-style dense retrieval, HYBRIDER-style greedy hopping and the learned policies, with accuracy, evidence length and selection latency reported. We also re-evaluate all selectors with a second reader that was never used during training.
+
+\paragraph{G7. Selection of tables to join has never been trained on downstream feedback.} MURRE lists downstream feedback as future work, REaR suggests RL for the expansion depth, and TableMind and Table-R1 list multi-table settings as future or unvalidated work. On MMQA, three-hop retrieval is much harder than two-hop retrieval for every method. \emph{Response:} deferred. The formulation already allows ``joinable table'' and ``row of another table'' nodes, but the data barrier described in Section~\ref{sec:lit-data} makes this the riskiest extension; it is planned as the last phase of the work (Section~\ref{sec:workplan}).
+
+\section{Research questions}
+
+The gaps translate into five questions that the preliminary experiments of Chapter~\ref{ch:results} begin to answer.
+
+\begin{enumerate}[label=\textbf{RQ\arabic*.}, leftmargin=*]
+  \item Does an entity-level policy trained with PPO select better evidence for a fixed reader than the retrieval and graph-walking heuristics used by existing frameworks, and than plain imitation of the traced evidence? (G1, G2, G6)
+  \item What does the learned STOP decision do to the amount of evidence passed to the reader, and how does the per-entity cost move the accuracy--length trade-off? (G3)
+  \item Does an evidence-recall signal help, and does it matter whether it enters as potential-based shaping or as a terminal bonus? (G4)
+  \item For a small pointer policy with short episodes, how do PPO with GAE, REINFORCE with a learned baseline and GRPO compare under identical rewards? (G5)
+  \item Is behaviour cloning on noisy, set-valued evidence labels a sufficient warm start, and how much does PPO add on top of it?
+\end{enumerate}

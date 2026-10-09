@@ -1,0 +1,11 @@
+config: env={'horizon': 3, 'k_passages': 5, 'max_cands': 48} reward={'answer_metric': 'f1', 'step_cost': 0.02, 'evidence_bonus': 0.0, 'potential': 0.0, 'gamma': 1.0} rl={'algo': 'ppo', 'iters': 40, 'episodes_per_iter': 512, 'group_size': 4, 'epochs': 4, 'minibatch': 256, 'clip': 0.2, 'actor_lr': 0.0001, 'critic_lr': 0.0005, 'ent_coef': 0.01, 'gae_lambda': 0.95, 'target_kl': 0.03, 'max_grad_norm': 0.5, 'critic_warmup': 3, 'grpo_std_norm': True, 'adv_norm': True, 'anneal_lr': True, 'eval_every': 5, 'seed': 0, 'init_actor': ''}
+[bc seed 0] oracle steps: train 13179 (skipped 0 questions), val 2702
+[bc seed 0] epoch 1 loss 1.602 acc 0.506 val loss 0.933 step-acc 0.627 val F1 19.53 EM 15.50 (115s)
+[bc seed 0] epoch 2 loss 0.932 acc 0.633 val loss 0.902 step-acc 0.642 val F1 19.03 EM 15.10 (95s)
+[bc seed 0] epoch 3 loss 0.846 acc 0.683 val loss 0.887 step-acc 0.662 val F1 21.69 EM 18.00 (90s)
+[bc seed 0] epoch 4 loss 0.772 acc 0.725 val loss 0.897 step-acc 0.665 val F1 20.98 EM 17.00 (25s)
+[bc seed 0] epoch 5 loss 0.694 acc 0.756 val loss 0.948 step-acc 0.668 val F1 22.33 EM 18.30 (24s)
+[bc seed 0] epoch 6 loss 0.624 acc 0.781 val loss 0.984 step-acc 0.671 val F1 23.38 EM 19.60 (25s)
+[bc seed 0] epoch 7 loss 0.566 acc 0.803 val loss 1.015 step-acc 0.666 val F1 22.39 EM 18.30 (34s)
+[bc seed 0] epoch 8 loss 0.523 acc 0.820 val loss 1.055 step-acc 0.662 val F1 21.69 EM 17.60 (33s)
+done: C:\Users\aksgu\Desktop\Multi_Hop_Table_Reasoning_through_RL\results\runs\bc_s0

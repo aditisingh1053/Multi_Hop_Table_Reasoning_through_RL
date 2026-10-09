@@ -1,0 +1,706 @@
+% ===================== RL for table QA and evidence selection =====================
+
+% NOTE: Venue (BRACIS 2024) from the arXiv comment; Springer LNCS/LNAI volume, pages and DOI not verified. First author is Marcos M. Jose (not "Ribeiro et al.").
+@inproceedings{jose2024qatexttablesdrl,
+  title     = {Question Answering with Texts and Tables through Deep Reinforcement Learning},
+  author    = {Jos{\'e}, Marcos M. and Ca{\c{c}}{\~a}o, Fl{\'a}vio N. and Ribeiro, Maria F. and Cheang, Rafael M. and Pirozelli, Paulo and Cozman, Fabio G.},
+  booktitle = {Proceedings of the Brazilian Conference on Intelligent Systems (BRACIS 2024)},
+  year      = {2024},
+  note      = {arXiv:2407.04858}
+}
+
+% NOTE: arXiv preprint (5-page short paper); no peer-reviewed venue found.
+@article{lee2024learningtoreduce,
+  title   = {Learning to Reduce: Optimal Representations of Structured Data in Prompting Large Language Models},
+  author  = {Lee, Younghun and Kim, Sungchul and Yu, Tong and Rossi, Ryan A. and Chen, Xiang},
+  journal = {arXiv preprint arXiv:2402.14195},
+  year    = {2024}
+}
+
+% NOTE: arXiv preprint, no venue as of Oct 2026 check. One of three distinct papers titled "Table-R1"/"Table-r1"; this is the region-based one (Wu et al.).
+@article{wu2025tabler1region,
+  title   = {Table-R1: Region-based Reinforcement Learning for Table Understanding},
+  author  = {Wu, Zhenhe and Yang, Jian and He, Zhongjiang and Pan, Changzai and Zhang, Jie and Liu, Jiaheng and Wu, Xianjie and Zhao, Yu and Song, Shuangyong and Li, Yongxiang and Li, Zhoujun and Li, Xueling},
+  journal = {arXiv preprint arXiv:2505.12415},
+  year    = {2025}
+}
+
+% NOTE: Title mismatch: the arXiv version (2505.23621) omits the final word "Tasks"; the Anthology title is used here.
+@inproceedings{yang-etal-2025-table,
+  title     = {Table-R1: Inference-Time Scaling for Table Reasoning Tasks},
+  author    = {Yang, Zheyuan and Chen, Lyuhao and Cohan, Arman and Zhao, Yilun},
+  booktitle = {Proceedings of the 2025 Conference on Empirical Methods in Natural Language Processing},
+  pages     = {20605--20624},
+  year      = {2025},
+  address   = {Suzhou, China},
+  publisher = {Association for Computational Linguistics},
+  doi       = {10.18653/v1/2025.emnlp-main.1040},
+  url       = {https://aclanthology.org/2025.emnlp-main.1040/},
+  note      = {arXiv:2505.23621 (arXiv title omits ``Tasks'')}
+}
+
+% NOTE: arXiv preprint self-described as "work in progress"; no venue found.
+@article{lei2025reasoningtable,
+  title   = {Reasoning-Table: Exploring Reinforcement Learning for Table Reasoning},
+  author  = {Lei, Fangyu and Meng, Jinxiang and Huang, Yiming and Chen, Tinghong and Zhang, Yun and He, Shizhu and Zhao, Jun and Liu, Kang},
+  journal = {arXiv preprint arXiv:2506.01710},
+  year    = {2025}
+}
+
+% NOTE: Retitled on arXiv (v1 was "Fortune: ..."); no venue listed on Semantic Scholar; treat as preprint.
+@article{cao2025formular1,
+  title   = {Formula-R1: Incentivizing LLM Reasoning over Complex Tables with Numerical Computation via Formula-Driven Reinforcement Learning},
+  author  = {Cao, Lang and Xu, Jingxian and Liu, Hanbing and Wang, Jinyu and Zhou, Mengyu and Dong, Haoyu and Han, Shi and Zhang, Dongmei},
+  journal = {arXiv preprint arXiv:2505.23667},
+  year    = {2025},
+  note    = {v1 titled ``Fortune: Formula-Driven Reinforcement Learning for Symbolic Table Reasoning in Language Models''}
+}
+
+% NOTE: WSDM '26 from the paper's ACM reference block; DOI and page numbers not verified.
+@inproceedings{jiang2026tablemind,
+  title     = {TableMind: An Autonomous Programmatic Agent for Tool-Augmented Table Reasoning},
+  author    = {Jiang, Chuang and Cheng, Mingyue and Tao, Xiaoyu and Mao, Qingyang and Ouyang, Jie and Liu, Qi},
+  booktitle = {Proceedings of the Nineteenth ACM International Conference on Web Search and Data Mining (WSDM '26)},
+  year      = {2026},
+  note      = {arXiv:2509.06278}
+}
+
+% NOTE: arXiv preprint; no venue found.
+@article{qiu2025opentabler1,
+  title   = {OpenTable-R1: A Reinforcement Learning Augmented Tool Agent for Open-Domain Table Question Answering},
+  author  = {Qiu, Zipeng},
+  journal = {arXiv preprint arXiv:2507.03018},
+  year    = {2025}
+}
+
+% NOTE: arXiv preprint; no venue found.
+@article{pourreza2025reasoningsql,
+  title   = {Reasoning-SQL: Reinforcement Learning with SQL Tailored Partial Rewards for Reasoning-Enhanced Text-to-SQL},
+  author  = {Pourreza, Mohammadreza and Talaei, Shayan and Sun, Ruoxi and Wan, Xingchen and Li, Hailong and Mirhoseini, Azalia and Saberi, Amin and Ar{\i}k, Sercan {\"O}.},
+  journal = {arXiv preprint arXiv:2503.23157},
+  year    = {2025}
+}
+
+% NOTE: arXiv preprint; only the abstract-level description was verified.
+@article{kwok2026retab,
+  title   = {Enhancing Table Reasoning with Deterministic Table-State Rewards},
+  author  = {Kwok, Tung Sum Thomas and Wang, Xinyu and He, Hengzhi and Lin, Xiaofeng and Lu, Peng and Ma, Liheng and Wang, Chunhe and Mak, Chun Ho and Luo, Yuyu and Wu, Ying Nian and Ding, Lei and Cheng, Guang},
+  journal = {arXiv preprint arXiv:2601.22530},
+  year    = {2026}
+}
+
+% NOTE: NeurIPS 2018 per the arXiv comment; proceedings page numbers not verified.
+@inproceedings{liang2018mapo,
+  title     = {Memory Augmented Policy Optimization for Program Synthesis and Semantic Parsing},
+  author    = {Liang, Chen and Norouzi, Mohammad and Berant, Jonathan and Le, Quoc and Lao, Ni},
+  booktitle = {Advances in Neural Information Processing Systems 31 (NeurIPS 2018)},
+  year      = {2018},
+  note      = {arXiv:1807.02322}
+}
+
+@inproceedings{agarwal2019merl,
+  title     = {Learning to Generalize from Sparse and Underspecified Rewards},
+  author    = {Agarwal, Rishabh and Liang, Chen and Schuurmans, Dale and Norouzi, Mohammad},
+  booktitle = {Proceedings of the 36th International Conference on Machine Learning},
+  series    = {Proceedings of Machine Learning Research},
+  volume    = {97},
+  pages     = {130--140},
+  year      = {2019},
+  note      = {arXiv:1902.07198}
+}
+
+% ===================== Table-text QA: datasets, pipelines, graph frameworks =====================
+
+@inproceedings{chen-etal-2020-hybridqa,
+    title = "{H}ybrid{QA}: A Dataset of Multi-Hop Question Answering over Tabular and Textual Data",
+    author = "Chen, Wenhu and Zha, Hanwen and Chen, Zhiyu and Xiong, Wenhan and Wang, Hong and Wang, William Yang",
+    booktitle = "Findings of the Association for Computational Linguistics: EMNLP 2020",
+    month = nov, year = "2020", address = "Online",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2020.findings-emnlp.91/",
+    doi = "10.18653/v1/2020.findings-emnlp.91",
+    pages = "1026--1036"
+}
+
+@inproceedings{chen2021open,
+    title = {Open Question Answering over Tables and Text},
+    author = {Wenhu Chen and Ming-Wei Chang and Eva Schlinger and William Yang Wang and William W. Cohen},
+    booktitle = {International Conference on Learning Representations},
+    year = {2021},
+    url = {https://openreview.net/forum?id=MmCRswl1UYl}
+}
+
+@inproceedings{wang-etal-2022-muger2,
+    title = "{M}u{GER}2: Multi-Granularity Evidence Retrieval and Reasoning for Hybrid Question Answering",
+    author = "Wang, Yingyao and Bao, Junwei and Duan, Chaoqun and Wu, Youzheng and He, Xiaodong and Zhao, Tiejun",
+    booktitle = "Findings of the Association for Computational Linguistics: EMNLP 2022",
+    month = dec, year = "2022", address = "Abu Dhabi, United Arab Emirates",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2022.findings-emnlp.498/",
+    doi = "10.18653/v1/2022.findings-emnlp.498",
+    pages = "6687--6697"
+}
+
+% NOTE: arXiv version (2112.07337) was originally titled "Multi-Instance Training for Question Answering Across Table and Linked Text".
+@inproceedings{kumar-etal-2023-multi,
+    title = "Multi-Row, Multi-Span Distant Supervision For {T}able+{T}ext Question Answering",
+    author = "Kumar, Vishwajeet and Gupta, Yash and Chemmengath, Saneem and Sen, Jaydeep and Chakrabarti, Soumen and Bharadwaj, Samarth and Pan, Feifei",
+    booktitle = "Proceedings of the 61st Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)",
+    month = jul, year = "2023", address = "Toronto, Canada",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2023.acl-long.449/",
+    doi = "10.18653/v1/2023.acl-long.449",
+    pages = "8080--8094"
+}
+
+% NOTE: Anthology lists this as ACL 2023 Volume 2 (Short Papers); one research note had recorded only "ACL 2023" without the track.
+@inproceedings{lei-etal-2023-s3hqa,
+    title = "{S}3{HQA}: A Three-Stage Approach for Multi-hop Text-Table Hybrid Question Answering",
+    author = "Lei, Fangyu and Li, Xiang and Wei, Yifan and He, Shizhu and Huang, Yiming and Zhao, Jun and Liu, Kang",
+    booktitle = "Proceedings of the 61st Annual Meeting of the Association for Computational Linguistics (Volume 2: Short Papers)",
+    month = jul, year = "2023", address = "Toronto, Canada",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2023.acl-short.147/",
+    doi = "10.18653/v1/2023.acl-short.147",
+    pages = "1731--1740"
+}
+
+% NOTE: Published title differs from the arXiv title (2305.14682: "A Table-alignment-based Cell-selection and Reasoning Model for Hybrid Question-Answering"); numbers identical in both.
+@inproceedings{wu-etal-2023-tacr,
+    title = "{TACR}: A Table Alignment-based Cell Selection Method for {H}ybrid{QA}",
+    author = {Wu, Jian and Xu, Yicheng and Gao, Yan and Lou, Jian-Guang and Karlsson, B{\"o}rje F. and Okumura, Manabu},
+    booktitle = "Findings of the Association for Computational Linguistics: ACL 2023",
+    month = jul, year = "2023", address = "Toronto, Canada",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2023.findings-acl.409/",
+    doi = "10.18653/v1/2023.findings-acl.409",
+    pages = "6535--6549"
+}
+
+% NOTE: Listed on OpenReview as an ICLR 2022 submission that was not accepted; cite as arXiv preprint.
+@article{sun2021iterative,
+    title = {Iterative Hierarchical Attention for Answering Complex Questions over Long Documents},
+    author = {Sun, Haitian and Cohen, William W. and Salakhutdinov, Ruslan},
+    journal = {arXiv preprint arXiv:2106.00200},
+    year = {2021},
+    url = {https://arxiv.org/abs/2106.00200}
+}
+
+@inproceedings{ma2022open,
+  title     = {Open-domain Question Answering via Chain of Reasoning over Heterogeneous Knowledge},
+  author    = {Ma, Kaixin and Cheng, Hao and Liu, Xiaodong and Nyberg, Eric and Gao, Jianfeng},
+  booktitle = {Findings of the Association for Computational Linguistics: EMNLP 2022},
+  pages     = {5360--5374},
+  year      = {2022}
+}
+
+@inproceedings{ma2023chain,
+  title     = {Chain-of-Skills: A Configurable Model for Open-domain Question Answering},
+  author    = {Ma, Kaixin and Cheng, Hao and Zhang, Yu and Liu, Xiaodong and Nyberg, Eric and Gao, Jianfeng},
+  booktitle = {Proceedings of the 61st Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)},
+  pages     = {1599--1618},
+  year      = {2023}
+}
+
+@inproceedings{shi-etal-2024-exploring,
+    title = "Exploring Hybrid Question Answering via Program-based Prompting",
+    author = "Shi, Qi and Cui, Han and Wang, Haofeng and Zhu, Qingfu and Che, Wanxiang and Liu, Ting",
+    booktitle = "Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)",
+    month = aug, year = "2024", address = "Bangkok, Thailand",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2024.acl-long.594/",
+    doi = "10.18653/v1/2024.acl-long.594",
+    pages = "11035--11046"
+}
+
+% NOTE: Author order differs between sources: the Anthology export (used here) gives Agarwal, Devaguptapu, S; an arXiv-derived record gives Agarwal, S, Devaguptapu. "ODYSSEY" is the method name inside this paper.
+@inproceedings{agarwal-etal-2025-hybrid,
+    title = "Hybrid Graphs for Table-and-Text based Question Answering using {LLM}s",
+    author = "Agarwal, Ankush and Devaguptapu, Chaitanya and S, Ganesh",
+    booktitle = "Proceedings of the 2025 Conference of the Nations of the Americas Chapter of the Association for Computational Linguistics: Human Language Technologies (Volume 1: Long Papers)",
+    month = apr, year = "2025", address = "Albuquerque, New Mexico",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2025.naacl-long.39/",
+    doi = "10.18653/v1/2025.naacl-long.39",
+    pages = "858--875"
+}
+
+% NOTE: arXiv preprint (Jan 2026); no venue found.
+@article{sharafath2026n2ngqa,
+  title   = {{N2N-GQA}: Noise-to-Narrative for Graph-Based Table-Text Question Answering Using {LLMs}},
+  author  = {Sharafath, Mohamed and Annamalai, Aravindh and Murugan, Ganesh and Venugopalan, Aravindakumar},
+  journal = {arXiv preprint arXiv:2601.06603},
+  year    = {2026}
+}
+
+% ===================== LLM table-reasoning frameworks (integration targets) =====================
+
+@inproceedings{wang2024chainoftable,
+  title     = {Chain-of-Table: Evolving Tables in the Reasoning Chain for Table Understanding},
+  author    = {Wang, Zilong and Zhang, Hao and Li, Chun-Liang and Eisenschlos, Julian Martin and Perot, Vincent and Wang, Zifeng and Miculicich, Lesly and Fujii, Yasuhisa and Shang, Jingbo and Lee, Chen-Yu and Pfister, Tomas},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2024}
+}
+
+% NOTE: NeurIPS 2024 proceedings pages not recorded. Not to be confused with the unrelated 2025 paper of the same name (Yu, Jian & Chen, arXiv 2506.10380).
+@inproceedings{chen2024tablerag,
+  title     = {{TableRAG}: Million-Token Table Understanding with Language Models},
+  author    = {Chen, Si-An and Miculicich, Lesly and Eisenschlos, Julian Martin and Wang, Zifeng and Wang, Zilong and Chen, Yanfei and Fujii, Yasuhisa and Lin, Hsuan-Tien and Lee, Chen-Yu and Pfister, Tomas},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2024}
+}
+
+% NOTE: The SIGIR 2023 published title may differ slightly from the arXiv title ("...: Decompose Evidence and Questions for Table-based Reasoning"); unverified.
+@inproceedings{ye2023dater,
+  title     = {Large Language Models are Versatile Decomposers: Decomposing Evidence and Questions for Table-based Reasoning},
+  author    = {Ye, Yunhu and Hui, Binyuan and Yang, Min and Li, Binhua and Huang, Fei and Li, Yongbin},
+  booktitle = {Proceedings of the 46th International ACM SIGIR Conference on Research and Development in Information Retrieval (SIGIR)},
+  year      = {2023}
+}
+
+@inproceedings{cheng2023binder,
+  title     = {Binding Language Models in Symbolic Languages},
+  author    = {Cheng, Zhoujun and Xie, Tianbao and Shi, Peng and Li, Chengzu and Nadkarni, Rahul and Hu, Yushi and Xiong, Caiming and Radev, Dragomir and Ostendorf, Mari and Zettlemoyer, Luke and Smith, Noah A. and Yu, Tao},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2023}
+}
+
+% ===================== Multi-table retrieval and QA =====================
+
+% NOTE: No arXiv version; the paper's official data link (anonymous.4open.science) has expired (HTTP 410).
+@inproceedings{wu2025mmqa,
+    title = {{MMQA}: Evaluating {LLM}s with Multi-Table Multi-Hop Complex Questions},
+    author = {Jian Wu and Linyi Yang and Dongyuan Li and Yuliang Ji and Manabu Okumura and Yue Zhang},
+    booktitle = {The Thirteenth International Conference on Learning Representations},
+    year = {2025},
+    url = {https://openreview.net/forum?id=GGlpykXDCa}
+}
+
+@inproceedings{zhang2025murre,
+  title     = {{MURRE}: Multi-Hop Table Retrieval with Removal for Open-Domain Text-to-{SQL}},
+  author    = {Zhang, Xuanliang and Wang, Dingzirui and Dou, Longxu and Zhu, Qingfu and Che, Wanxiang},
+  booktitle = {Proceedings of the 31st International Conference on Computational Linguistics (COLING)},
+  year      = {2025}
+}
+
+@inproceedings{chen2024jar,
+  title     = {Is Table Retrieval a Solved Problem? Exploring Join-Aware Multi-Table Retrieval},
+  author    = {Chen, Peter Baile and Zhang, Yi and Roth, Dan},
+  booktitle = {Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics (ACL)},
+  year      = {2024}
+}
+
+% NOTE: Workshop paper (AI for Tabular Data Workshop, EurIPS 2025); cited via arXiv.
+@article{boutaleb2025exploring,
+  title   = {Exploring Multi-Table Retrieval Through Iterative Search},
+  author  = {Boutaleb, Allaa and Amann, Bernd and Angarita, Rafael and Naacke, Hubert},
+  journal = {arXiv preprint arXiv:2511.13418},
+  year    = {2025},
+  note    = {AI for Tabular Data Workshop, EurIPS 2025}
+}
+
+% NOTE: EMNLP 2026 per the arXiv comment (arXiv 2608.30291); main vs Findings track not stated.
+@inproceedings{ho2026pearl,
+  title     = {{PEARL}: Front-Loading Relational Chains for Multi-Hop Table Retrieval},
+  author    = {Ho, Subeen and Kang, Hyeongu and Kang, SeongKu and Yoon, Susik},
+  booktitle = {Proceedings of the 2026 Conference on Empirical Methods in Natural Language Processing (EMNLP)},
+  year      = {2026}
+}
+
+% NOTE: arXiv preprint; venue unknown.
+@article{agarwal2025rear,
+  title   = {{REaR}: Retrieve, Expand and Refine for Effective Multitable Retrieval},
+  author  = {Agarwal, Rishita and Singhal, Himanshu and Chen, Peter Baile and Roy Choudhury, Manan and Roth, Dan and Gupta, Vivek},
+  journal = {arXiv preprint arXiv:2511.00805},
+  year    = {2025}
+}
+
+% ===================== RL evidence selection and search agents (text) =====================
+
+% NOTE: EMNLP 2025 per the arXiv comment ("camera-ready") and Semantic Scholar pages; main vs Findings track not confirmed.
+@inproceedings{jiang2025s3,
+  title     = {s3: You Don't Need That Much Data to Train a Search Agent via {RL}},
+  author    = {Jiang, Pengcheng and Xu, Xueqiang and Lin, Jiacheng and Xiao, Jinfeng and Wang, Zifeng and Sun, Jimeng and Han, Jiawei},
+  booktitle = {Proceedings of the 2025 Conference on Empirical Methods in Natural Language Processing (EMNLP)},
+  pages     = {21599--21617},
+  year      = {2025},
+  note      = {arXiv:2505.14146}
+}
+
+% NOTE: EMNLP 2025 main; Anthology ID 2025.emnlp-main.1106 seen via search index and Semantic Scholar, not the Anthology bib export.
+@inproceedings{wang2025stepsearch,
+  title     = {{StepSearch}: Igniting {LLMs} Search Ability via Step-Wise Proximal Policy Optimization},
+  author    = {Wang, Ziliang and Zheng, Xuhui and An, Kang and Ouyang, Cijun and Cai, Jialu and Wang, Yuhang and Wu, Yichao},
+  booktitle = {Proceedings of the 2025 Conference on Empirical Methods in Natural Language Processing (EMNLP)},
+  year      = {2025},
+  note      = {arXiv:2505.15107}
+}
+
+% NOTE: Venue COLM 2025 per OpenReview. Reported improvement over RAG baselines is internally inconsistent across arXiv versions (24% vs 41% for 7B).
+@inproceedings{jin2025searchr1,
+  title     = {Search-{R1}: Training {LLMs} to Reason and Leverage Search Engines with Reinforcement Learning},
+  author    = {Jin, Bowen and Zeng, Hansi and Yue, Zhenrui and Yoon, Jinsung and Arik, Sercan and Wang, Dong and Zamani, Hamed and Han, Jiawei},
+  booktitle = {Conference on Language Modeling (COLM)},
+  year      = {2025},
+  note      = {arXiv:2503.09516}
+}
+
+% NOTE: arXiv preprint; no venue found.
+@article{jin2025empirical,
+  title   = {An Empirical Study on Reinforcement Learning for Reasoning-Search Interleaved {LLM} Agents},
+  author  = {Jin, Bowen and Yoon, Jinsung and Kargupta, Priyanka and Arik, Sercan O. and Han, Jiawei},
+  journal = {arXiv preprint arXiv:2505.15117},
+  year    = {2025}
+}
+
+% NOTE: NeurIPS 2025 per the arXiv comment only.
+@inproceedings{chen2025mmoarag,
+  title     = {Improving Retrieval-Augmented Generation through Multi-Agent Reinforcement Learning},
+  author    = {Chen, Yiqun and Yan, Lingyong and Sun, Weiwei and Ma, Xinyu and Zhang, Yi and Wang, Shuaiqiang and Yin, Dawei and Yang, Yiming and Mao, Jiaxin},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2025},
+  note      = {arXiv:2501.15228}
+}
+
+% NOTE: ICLR 2026 per the arXiv comment ("Accepted by ICLR 2026").
+@inproceedings{wang2026igpo,
+  title     = {Information Gain-based Policy Optimization: A Simple and Effective Approach for Multi-Turn Search Agents},
+  author    = {Wang, Guoqing and Dai, Sunhao and Ye, Guangze and Gan, Zeyu and Yao, Wei and Deng, Yong and Wu, Xiaofeng and Ying, Zhenzhe},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2026},
+  note      = {arXiv:2510.14967}
+}
+
+% NOTE: EMNLP 2025 Main per the arXiv comment.
+@inproceedings{wu2025searchwisely,
+  title     = {Search Wisely: Mitigating Sub-optimal Agentic Searches By Reducing Uncertainty},
+  author    = {Wu, Peilin and Zhang, Mian and Zhang, Xinlu and Du, Xinya and Chen, Zhiyu Zoey},
+  booktitle = {Proceedings of the 2025 Conference on Empirical Methods in Natural Language Processing (EMNLP)},
+  year      = {2025},
+  note      = {arXiv:2505.17281}
+}
+
+@inproceedings{asai2020learning,
+  title     = {Learning to Retrieve Reasoning Paths over Wikipedia Graph for Question Answering},
+  author    = {Asai, Akari and Hashimoto, Kazuma and Hajishirzi, Hannaneh and Socher, Richard and Xiong, Caiming},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2020},
+  note      = {arXiv:1911.10470}
+}
+
+@inproceedings{das2019multistep,
+  title     = {Multi-step Retriever-Reader Interaction for Scalable Open-domain Question Answering},
+  author    = {Das, Rajarshi and Dhuliawala, Shehzaad and Zaheer, Manzil and McCallum, Andrew},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2019},
+  note      = {arXiv:1905.05733}
+}
+
+% ===================== RL graph walking and RL-based KBQA =====================
+
+% NOTE: ICLR 2018 venue confirmed from the arXiv PDF header; the OpenReview forum page could not be loaded, so the arXiv URL is used.
+@inproceedings{das2018minerva,
+  title     = {Go for a Walk and Arrive at the Answer: Reasoning Over Paths in Knowledge Bases using Reinforcement Learning},
+  author    = {Das, Rajarshi and Dhuliawala, Shehzaad and Zaheer, Manzil and Vilnis, Luke and Durugkar, Ishan and Krishnamurthy, Akshay and Smola, Alex and McCallum, Andrew},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2018},
+  url       = {https://arxiv.org/abs/1711.05851}
+}
+
+@inproceedings{lin2018multihop,
+  title     = {Multi-Hop Knowledge Graph Reasoning with Reward Shaping},
+  author    = {Lin, Xi Victoria and Socher, Richard and Xiong, Caiming},
+  booktitle = {Proceedings of the 2018 Conference on Empirical Methods in Natural Language Processing},
+  pages     = {3243--3253},
+  year      = {2018},
+  address   = {Brussels, Belgium},
+  publisher = {Association for Computational Linguistics},
+  doi       = {10.18653/v1/D18-1362},
+  url       = {https://aclanthology.org/D18-1362/}
+}
+
+% NOTE: Page numbers in the NeurIPS volume not verified (the ACM DL record gives pp. 6787-6798).
+@inproceedings{shen2018mwalk,
+  title     = {{M-Walk}: Learning to Walk over Graphs using {Monte Carlo} Tree Search},
+  author    = {Shen, Yelong and Chen, Jianshu and Huang, Po-Sen and Guo, Yuqing and Gao, Jianfeng},
+  booktitle = {Advances in Neural Information Processing Systems},
+  volume    = {31},
+  year      = {2018},
+  url       = {http://papers.neurips.cc/paper/7912-m-walk-learning-to-walk-over-graphs-using-monte-carlo-tree-search.pdf}
+}
+
+% NOTE: No arXiv version; full text paywalled (HTTP 403). Author spelling from Semantic Scholar and a citing paper's reference list; method details beyond the abstract unverified.
+@inproceedings{qiu2020srn,
+  title     = {Stepwise Reasoning for Multi-Relation Question Answering over Knowledge Graph with Weak Supervision},
+  author    = {Qiu, Yunqi and Wang, Yuanzhuo and Jin, Xiaolong and Zhang, Kun},
+  booktitle = {Proceedings of the 13th International Conference on Web Search and Data Mining (WSDM '20)},
+  pages     = {474--482},
+  year      = {2020},
+  publisher = {ACM},
+  doi       = {10.1145/3336191.3371812}
+}
+
+@inproceedings{xiong2017deeppath,
+  title     = {{DeepPath}: A Reinforcement Learning Method for Knowledge Graph Reasoning},
+  author    = {Xiong, Wenhan and Hoang, Thien and Wang, William Yang},
+  booktitle = {Proceedings of the 2017 Conference on Empirical Methods in Natural Language Processing},
+  pages     = {564--573},
+  year      = {2017},
+  address   = {Copenhagen, Denmark},
+  publisher = {Association for Computational Linguistics},
+  doi       = {10.18653/v1/D17-1060},
+  url       = {https://aclanthology.org/D17-1060/}
+}
+
+% NOTE: arXiv preprint (v5, May 2026); no venue in the arXiv comments. "KG-R1" is the system name.
+@article{lin2025kgr1,
+  title   = {Efficient and Transferable Agentic Knowledge Graph {RAG} via Reinforcement Learning},
+  author  = {Lin, Junhong and Liu, Shicheng and Song, Jinyeop and Wang, Song and Shun, Julian and Zhu, Yada},
+  journal = {arXiv preprint arXiv:2509.26383},
+  year    = {2025}
+}
+
+% NOTE: arXiv preprint (Jul 2026); no venue. The paper's table and prose give slightly different SFT-only and RL-only numbers.
+@article{sun2026sogr1,
+  title   = {{Search-on-Graph-R1}: Training Large Language Models to Search Knowledge Graphs with Reinforcement Learning},
+  author  = {Sun, Jia Ao and Yu, Hao and Mo, Fengran and Su, Zhan and Hui, Yuchen and Liu, Bang and Nie, Jian-Yun},
+  journal = {arXiv preprint arXiv:2607.18481},
+  year    = {2026}
+}
+
+% NOTE: WWW 2026 per the arXiv comment; proceedings pages and DOI not found.
+@inproceedings{yu2026graphragr1,
+  title     = {{GraphRAG-R1}: Graph Retrieval-Augmented Generation with Process-Constrained Reinforcement Learning},
+  author    = {Yu, Chuanyue and Zhao, Kuo and Li, Yuhan and Chang, Heng and Feng, Mingjian and Jiang, Xiangzhe and Sun, Yufei and Li, Jia and Zhang, Yuzhi and Li, Jianxin and Zhang, Ziwei},
+  booktitle = {Proceedings of the ACM Web Conference 2026 (WWW '26)},
+  year      = {2026},
+  note      = {arXiv:2507.23581}
+}
+
+@inproceedings{luo2026graphr1,
+  title     = {{Graph-R1}: Towards Agentic {GraphRAG} Framework via End-to-end Reinforcement Learning},
+  author    = {Luo, Haoran and E, Haihong and Chen, Guanting and Lin, Qika and Guo, Yikai and Xu, Fangzhi and Kuang, Zemin and Song, Meina and Wu, Xiaobao and Zhu, Yifan and Tuan, Luu Anh},
+  booktitle = {Proceedings of the 43rd International Conference on Machine Learning},
+  series    = {Proceedings of Machine Learning Research},
+  volume    = {306},
+  year      = {2026},
+  note      = {arXiv:2507.21892}
+}
+
+% ===================== Optimisation foundations =====================
+
+% NOTE: Springer metadata gives issue 3 (often cited as 8(3-4)); some details of the equations verified only via a third-party transcription.
+@article{williams1992simple,
+  title     = {Simple Statistical Gradient-Following Algorithms for Connectionist Reinforcement Learning},
+  author    = {Williams, Ronald J.},
+  journal   = {Machine Learning},
+  volume    = {8},
+  number    = {3},
+  pages     = {229--256},
+  year      = {1992},
+  publisher = {Kluwer Academic Publishers},
+  doi       = {10.1007/BF00992696}
+}
+
+@inproceedings{schulman2016gae,
+  title     = {High-Dimensional Continuous Control Using Generalized Advantage Estimation},
+  author    = {Schulman, John and Moritz, Philipp and Levine, Sergey and Jordan, Michael I. and Abbeel, Pieter},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2016},
+  eprint    = {1506.02438},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{mnih2016asynchronous,
+  title     = {Asynchronous Methods for Deep Reinforcement Learning},
+  author    = {Mnih, Volodymyr and Badia, Adri{\`a} Puigdom{\`e}nech and Mirza, Mehdi and Graves, Alex and Lillicrap, Timothy P. and Harley, Tim and Silver, David and Kavukcuoglu, Koray},
+  booktitle = {Proceedings of the 33rd International Conference on Machine Learning (ICML)},
+  series    = {Proceedings of Machine Learning Research},
+  volume    = {48},
+  pages     = {1928--1937},
+  year      = {2016},
+  publisher = {PMLR}
+}
+
+% NOTE: arXiv preprint only; no peer-reviewed venue in the arXiv record.
+@article{schulman2017ppo,
+  title   = {Proximal Policy Optimization Algorithms},
+  author  = {Schulman, John and Wolski, Filip and Dhariwal, Prafulla and Radford, Alec and Klimov, Oleg},
+  journal = {arXiv preprint arXiv:1707.06347},
+  year    = {2017}
+}
+
+% NOTE: Proceedings title differs from the arXiv title (2005.12729); proceedings title used.
+@inproceedings{engstrom2020implementation,
+  title     = {Implementation Matters in Deep {RL}: A Case Study on {PPO} and {TRPO}},
+  author    = {Engstrom, Logan and Ilyas, Andrew and Santurkar, Shibani and Tsipras, Dimitris and Janoos, Firdaus and Rudolph, Larry and Madry, Aleksander},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2020},
+  note      = {arXiv:2005.12729, titled ``Implementation Matters in Deep Policy Gradients: A Case Study on PPO and TRPO''}
+}
+
+% NOTE: Proceedings title differs from the arXiv title (2006.05990: "What Matters In On-Policy Reinforcement Learning? A Large-Scale Empirical Study"); venue verified via listings, not the OpenReview forum page itself.
+@inproceedings{andrychowicz2021matters,
+  title     = {What Matters for On-Policy Deep Actor-Critic Methods? {A} Large-Scale Study},
+  author    = {Andrychowicz, Marcin and Raichuk, Anton and Sta{\'n}czyk, Piotr and Orsini, Manu and Girgin, Sertan and Marinier, Rapha{\"e}l and Hussenot, L{\'e}onard and Geist, Matthieu and Pietquin, Olivier and Michalski, Marcin and Gelly, Sylvain and Bachem, Olivier},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2021},
+  url       = {https://openreview.net/forum?id=nIAxjsniDzg}
+}
+
+% NOTE: Non-archival ICLR Blog Track post; cite only alongside the archival implementation studies.
+@inproceedings{huang2022the37implementation,
+  author    = {Huang, Shengyi and Dossa, Rousslan Fernand Julien and Raffin, Antonin and Kanervisto, Anssi and Wang, Weixun},
+  title     = {The 37 Implementation Details of Proximal Policy Optimization},
+  booktitle = {ICLR Blog Track},
+  year      = {2022},
+  url       = {https://iclr-blog-track.github.io/2022/03/25/ppo-implementation-details/}
+}
+
+% NOTE: The FLAIRS article page lists no page range.
+@article{huang2022closer,
+  title   = {A Closer Look at Invalid Action Masking in Policy Gradient Algorithms},
+  author  = {Huang, Shengyi and Onta{\~n}{\'o}n, Santiago},
+  journal = {The International FLAIRS Conference Proceedings},
+  volume  = {35},
+  year    = {2022},
+  doi     = {10.32473/flairs.v35i.130584}
+}
+
+@inproceedings{vinyals2015pointer,
+  title     = {Pointer Networks},
+  author    = {Vinyals, Oriol and Fortunato, Meire and Jaitly, Navdeep},
+  booktitle = {Advances in Neural Information Processing Systems},
+  volume    = {28},
+  pages     = {2692--2700},
+  year      = {2015}
+}
+
+@inproceedings{chandak2020sas,
+  title     = {Reinforcement Learning When All Actions Are Not Always Available},
+  author    = {Chandak, Yash and Theocharous, Georgios and Metevier, Blossom and Thomas, Philip S.},
+  booktitle = {Proceedings of the AAAI Conference on Artificial Intelligence},
+  volume    = {34},
+  number    = {04},
+  pages     = {3381--3388},
+  year      = {2020},
+  doi       = {10.1609/aaai.v34i04.5740}
+}
+
+@inproceedings{ng1999policy,
+  title     = {Policy Invariance Under Reward Transformations: Theory and Application to Reward Shaping},
+  author    = {Ng, Andrew Y. and Harada, Daishi and Russell, Stuart J.},
+  booktitle = {Proceedings of the Sixteenth International Conference on Machine Learning (ICML)},
+  pages     = {278--287},
+  year      = {1999},
+  publisher = {Morgan Kaufmann},
+  address   = {San Francisco, CA, USA}
+}
+
+% NOTE: arXiv preprint only (introduces GRPO).
+@article{shao2024deepseekmath,
+  title   = {{DeepSeekMath}: Pushing the Limits of Mathematical Reasoning in Open Language Models},
+  author  = {Shao, Zhihong and Wang, Peiyi and Zhu, Qihao and Xu, Runxin and Song, Junxiao and Bi, Xiao and Zhang, Haowei and Zhang, Mingchuan and Li, Y. K. and Wu, Y. and Guo, Daya},
+  journal = {arXiv preprint arXiv:2402.03300},
+  year    = {2024}
+}
+
+@inproceedings{ahmadian-etal-2024-back,
+  title     = {Back to Basics: Revisiting {REINFORCE}-Style Optimization for Learning from Human Feedback in {LLM}s},
+  author    = {Ahmadian, Arash and Cremer, Chris and Gall{\'e}, Matthias and Fadaee, Marzieh and Kreutzer, Julia and Pietquin, Olivier and {\"U}st{\"u}n, Ahmet and Hooker, Sara},
+  editor    = {Ku, Lun-Wei and Martins, Andre and Srikumar, Vivek},
+  booktitle = {Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)},
+  month     = aug,
+  year      = {2024},
+  address   = {Bangkok, Thailand},
+  publisher = {Association for Computational Linguistics},
+  url       = {https://aclanthology.org/2024.acl-long.662/},
+  doi       = {10.18653/v1/2024.acl-long.662},
+  pages     = {12248--12267}
+}
+
+% NOTE: COLM 2025 venue from the PDF header and an OpenReview listing; author list taken from arXiv, not checked separately against the COLM proceedings.
+@inproceedings{liu2025understanding,
+  title     = {Understanding {R1-Zero}-Like Training: A Critical Perspective},
+  author    = {Liu, Zichen and Chen, Changyu and Li, Wenjun and Qi, Penghui and Pang, Tianyu and Du, Chao and Lee, Wee Sun and Lin, Min},
+  booktitle = {Conference on Language Modeling (COLM)},
+  year      = {2025},
+  url       = {https://openreview.net/forum?id=5PAF7PAY2Y}
+}
+
+@article{silver2016mastering,
+  title   = {Mastering the Game of {Go} with Deep Neural Networks and Tree Search},
+  author  = {Silver, David and Huang, Aja and Maddison, Chris J. and Guez, Arthur and Sifre, Laurent and van den Driessche, George and Schrittwieser, Julian and Antonoglou, Ioannis and Panneershelvam, Veda and Lanctot, Marc and Dieleman, Sander and Grewe, Dominik and Nham, John and Kalchbrenner, Nal and Sutskever, Ilya and Lillicrap, Timothy and Leach, Madeleine and Kavukcuoglu, Koray and Graepel, Thore and Hassabis, Demis},
+  journal = {Nature},
+  volume  = {529},
+  number  = {7587},
+  pages   = {484--489},
+  year    = {2016},
+  doi     = {10.1038/nature16961}
+}
+
+@inproceedings{ross2011reduction,
+  title     = {A Reduction of Imitation Learning and Structured Prediction to No-Regret Online Learning},
+  author    = {Ross, St{\'e}phane and Gordon, Geoffrey J. and Bagnell, J. Andrew},
+  booktitle = {Proceedings of the Fourteenth International Conference on Artificial Intelligence and Statistics (AISTATS)},
+  series    = {Proceedings of Machine Learning Research},
+  volume    = {15},
+  pages     = {627--635},
+  year      = {2011},
+  publisher = {PMLR}
+}
+
+@inproceedings{henderson2018deep,
+  title     = {Deep Reinforcement Learning That Matters},
+  author    = {Henderson, Peter and Islam, Riashat and Bachman, Philip and Pineau, Joelle and Precup, Doina and Meger, David},
+  booktitle = {Proceedings of the AAAI Conference on Artificial Intelligence},
+  volume    = {32},
+  number    = {1},
+  pages     = {3207--3214},
+  year      = {2018},
+  doi       = {10.1609/aaai.v32i1.11694}
+}
+
+@inproceedings{agarwal2021deep,
+  title     = {Deep Reinforcement Learning at the Edge of the Statistical Precipice},
+  author    = {Agarwal, Rishabh and Schwarzer, Max and Castro, Pablo Samuel and Courville, Aaron and Bellemare, Marc G.},
+  booktitle = {Advances in Neural Information Processing Systems},
+  volume    = {34},
+  pages     = {29304--29320},
+  year      = {2021}
+}
+
+% ===================== Datasets considered and rejected as primary benchmarks =====================
+
+@inproceedings{pasupat-liang-2015-compositional,
+    title = "Compositional Semantic Parsing on Semi-Structured Tables",
+    author = "Pasupat, Panupong and Liang, Percy",
+    booktitle = "Proceedings of the 53rd Annual Meeting of the Association for Computational Linguistics and the 7th International Joint Conference on Natural Language Processing (Volume 1: Long Papers)",
+    month = jul, year = "2015", address = "Beijing, China",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/P15-1142/",
+    doi = "10.3115/v1/P15-1142",
+    pages = "1470--1480"
+}
+
+@inproceedings{zhu-etal-2021-tat,
+    title = "{TAT}-{QA}: A Question Answering Benchmark on a Hybrid of Tabular and Textual Content in Finance",
+    author = "Zhu, Fengbin and Lei, Wenqiang and Huang, Youcheng and Wang, Chao and Zhang, Shuo and Lv, Jiancheng and Feng, Fuli and Chua, Tat-Seng",
+    booktitle = "Proceedings of the 59th Annual Meeting of the Association for Computational Linguistics and the 11th International Joint Conference on Natural Language Processing (Volume 1: Long Papers)",
+    month = aug, year = "2021", address = "Online",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2021.acl-long.254/",
+    doi = "10.18653/v1/2021.acl-long.254",
+    pages = "3277--3287"
+}
+
+@inproceedings{pal-etal-2023-multitabqa,
+    title = "{M}ulti{T}ab{QA}: Generating Tabular Answers for Multi-Table Question Answering",
+    author = "Pal, Vaishali and Yates, Andrew and Kanoulas, Evangelos and de Rijke, Maarten",
+    booktitle = "Proceedings of the 61st Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)",
+    month = jul, year = "2023", address = "Toronto, Canada",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2023.acl-long.348/",
+    doi = "10.18653/v1/2023.acl-long.348",
+    pages = "6322--6334"
+}
