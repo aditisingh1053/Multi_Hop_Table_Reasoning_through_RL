@@ -24,7 +24,7 @@ Figure~\ref{fig:example} shows a dev example. Answering it requires choosing the
   \node (p2) [psg, right=0.5cm of r2, very thick] {Walter Payton : Walter Jerry Payton \dots};
   \draw[->, thick] (r2.east) -- (p2.west);
   \draw[->, gray] (r1.east) -- (p1.west);
-  \node[font=\footnotesize, anchor=north west] at ($(r3.south west)+(0,-0.1)$) {Rows are linearised as ``header is value''; arrows are cell hyperlinks. Bold: the evidence a correct policy selects.};
+  \node[font=\footnotesize, anchor=north west, text width=14.5cm, inner sep=0pt] at ($(r3.south west)+(0,-0.15)$) {Rows are linearised as ``header is value''; arrows are cell hyperlinks. Bold: the evidence a correct policy selects.};
 \end{tikzpicture}
 \caption{A HybridQA dev question (id \texttt{00153f694413a536}) as an entity graph. The correct evidence is the rank-2 row followed by the passage linked from it.}
 \label{fig:example}

@@ -46,7 +46,11 @@ last type & whether the last selected entity is a row or a passage \\
 \end{equation}
 The policy is the masked softmax of Equation~\eqref{eq:maskedsoftmax} over the valid candidates and, from the second step on, \STOP. The elementwise product lets the scorer express similarity between state and candidate directly, and giving \STOP{} its own head follows M-Walk \citep{shen2018mwalk}. Candidates are padded to $K=48$ per state; padded slots, and \STOP{} at $t=0$, receive the logit $-10^9$.
 
-\paragraph{Critic.} The value network has its own copies of $f_s$ and $f_c$ and estimates $V_\phi(s)$ from $[\mathbf{h}';\operatorname{mean}_a\mathbf{g}'_a;\max_a\mathbf{g}'_a]$, so it sees a permutation-invariant summary of the current candidates. Separate actor and critic networks follow the recommendation of \citet{andrychowicz2021matters}. The actor has 762{,}114 parameters and the critic 728{,}065. All linear layers use orthogonal initialisation with gain $\sqrt2$, except the output layers of the actor (gain $0.01$) and the critic (gain $1$) \citep{andrychowicz2021matters,engstrom2020implementation}.
+\paragraph{Critic.} The value network has its own copies of $f_s$ and $f_c$, written $f'_s$ and $f'_c$, and estimates
+\begin{equation*}
+  V_\phi(s)=f_v\big([\mathbf{h}';\ \operatorname{mean}_a\mathbf{g}'_a;\ \max_a\mathbf{g}'_a]\big),\qquad \mathbf{h}'=f'_s(\mathbf{s}),\quad \mathbf{g}'_a=f'_c([\mathbf{e}_a;\mathbf{x}_a]),
+\end{equation*}
+so it sees a permutation-invariant summary of the current candidates. Separate actor and critic networks follow the recommendation of \citet{andrychowicz2021matters}. The actor has 762{,}114 parameters and the critic 728{,}065. All linear layers use orthogonal initialisation with gain $\sqrt2$, except the output layers of the actor (gain $0.01$) and the critic (gain $1$) \citep{andrychowicz2021matters,engstrom2020implementation}.
 
 \section{Behaviour cloning on set-valued targets}
 \label{sec:bc}
@@ -64,7 +68,7 @@ Behaviour cloning has two known weaknesses that motivate the RL stage. It imitat
 
 Algorithm~\ref{alg:ppo} gives the training loop. Each iteration samples 1{,}024 training questions, runs one stochastic episode for each, asks the frozen reader for the answers (from the cache wherever possible), computes per-step rewards with Equation~\eqref{eq:reward} and advantages with GAE (Equation~\eqref{eq:gae}, $\gamma=1$, $\lambda=0.95$), and then performs four epochs of minibatch updates of the clipped objective~\eqref{eq:ppo} with $\epsilon=0.2$ and an entropy coefficient of 0.01. Advantages are normalised over the batch. The critic is regressed on $V^{\mathrm{targ}}_t=\hat A_t+V_\phi(s_t)$ without value clipping. Both networks use Adam with $\epsilon=10^{-5}$, linearly decayed learning rates ($10^{-4}$ for the actor, $10^{-3}$ for the critic) and gradient-norm clipping at 0.5. The epoch loop stops early once the approximate KL divergence of an epoch exceeds $1.5\times0.03$.
 
-Two details are specific to our setting. First, the actor starts from the cloned policy while the critic starts from scratch; to stop an untrained critic from producing meaningless advantages that would undo the warm start, the first five iterations update only the critic. Second, the candidate set and its mask are stored with each transition and re-applied when log-probabilities are recomputed, as required for a correct importance ratio \citep{huang2022closer}. Every five iterations the greedy policy is evaluated on the validation set, and the iterate with the best validation F1 is kept (the initial cloned policy is not eligible, so that the reported model is always a PPO iterate).
+Two details are specific to our setting. First, the actor starts from the cloned policy while the critic starts from scratch; to stop an untrained critic from producing meaningless advantages that would undo the warm start, the first five iterations update only the critic. Second, the candidate set and its mask are stored with each transition and re-applied when log-probabilities are recomputed, as required for a correct importance ratio \citep{huang2022closer}. Every five iterations the greedy policy is evaluated on the validation set, and the iterate with the best validation F1 among iterations 5, 10, \ldots, 40 is kept. The evaluation before training (iteration 0) is excluded, but because the critic-only warm-up covers the first five iterations, the policy evaluated at iteration 5 is still the cloned one. When no later iterate scores higher, the reported model is therefore identical to the cloned policy; Section~\ref{sec:dynamics} reports where this happened.
 
 \begin{algorithm}[t]
 \caption{PPO for entity selection (one seed)}
@@ -85,7 +89,7 @@ Two details are specific to our setting. First, the actor starts from the cloned
     \EndFor
     \State stop updating $\theta$ in this iteration if the epoch's mean approximate KL exceeds $0.045$
   \EndFor
-  \State every 5 iterations: greedy evaluation on the validation set; keep the best iterate
+  \State every 5 iterations: greedy evaluation on the validation set; keep the best evaluated policy
 \EndFor
 \end{algorithmic}
 \end{algorithm}
@@ -107,7 +111,7 @@ The selector exposes one function: given a question, a table and its linked pass
 \begin{figure}[t]
 \centering
 \begin{tikzpicture}[
-  font=\small, node distance=0.55cm and 0.55cm,
+  font=\small, node distance=0.45cm and 0.45cm,
   box/.style={draw, rounded corners=3pt, align=center, minimum height=1.0cm, inner sep=4pt},
   learn/.style={box, fill=blue!8, very thick},
   frozen/.style={box, fill=gray!10},

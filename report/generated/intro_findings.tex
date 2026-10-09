@@ -1,1 +1,7 @@
-PLACEHOLDER intro findings
+The report makes four contributions.
+\begin{enumerate}
+  \item \textbf{A focused survey and gap analysis.} More than one hundred candidate papers were checked and the relevant ones organised into four groups; the twelve most relevant are ranked and analysed, and seven precise research gaps are derived. The sharpest gap is that no published RL method selects table entities step by step with a learned stop, and the only RL controller for table--text QA did no better than a fixed strategy.
+  \item \textbf{A formulation with two properties of the evidence reward.} Entity selection over a per-question graph of rows and linked passages is defined as an MDP with a reader-in-the-loop reward. We show that the evidence-recall signal leaves every return unchanged when it enters as a potential, and that group-relative methods such as GRPO cannot see it at all in that form.
+  \item \textbf{A tested implementation and a plan.} A pointer actor--critic with PPO and GAE, behaviour cloning on set-valued targets, REINFORCE, GRPO, heuristic baselines and an oracle are implemented with unit tests and a resumable pipeline. All training and evaluation runs of this report together take 1.2 hours on one T4 GPU.
+  \item \textbf{Preliminary results with statistical tests.} On the full HybridQA dev set, with the same frozen reader for every selector, PPO trained from scratch reaches \fScratch{} F1, against \fBmThree{} for the best heuristic and \fBc{} for behaviour cloning (paired-bootstrap gains of \dScratchBm{} and \dScratchBc{} points, $p<0.001$). Warm-starting PPO from the cloned policy, which the literature recommends, removed the gain, and GRPO degraded. These findings change the plan for the rest of the project.
+\end{enumerate}

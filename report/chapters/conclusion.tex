@@ -1,3 +1,24 @@
-\chapter{PLACEHOLDER conclusion}
+\chapter{Conclusion and Future Work}
 \label{ch:conclusion}
-PLACEHOLDER
+
+\section{Conclusion}
+
+This report studied multi-hop table question answering as a sequential decision problem in which a policy chooses, one entity at a time, which table row or linked passage to pass to a fixed reader, and when to stop. The literature review found that reinforcement learning had been used to walk knowledge graphs, to select a region inside a single table and to train text search agents, but that no published method selected table entities step by step with a learned stop, and that the one RL controller for table--text QA had collapsed to a fixed strategy. We formulated the problem as an MDP over per-question entity graphs built from HybridQA, with a reader-in-the-loop answer reward, a per-entity cost and an evidence signal that can enter either as potential-based shaping or as a terminal bonus. We implemented a pointer actor--critic trained with PPO and GAE, together with behaviour cloning, REINFORCE, GRPO, nine ablations and a set of heuristic baselines, and evaluated everything on the full HybridQA dev set with paired bootstrap tests.
+
+The preliminary results support the central idea and correct the training recipe. A policy trained with PPO from scratch improved the frozen reader's F1 from \fBmThree{} (best heuristic) and \fBc{} (behaviour cloning) to \fScratch{}, by selecting, at about the same evidence length as top-3 retrieval, evidence that contains the answer far more often. Initialising the same policy by cloning the traced evidence trapped every optimiser near the cloned policy, and GRPO collapsed towards one-entity episodes because of its group normalisation. The reward and advantage ablations were inconclusive, because they were run in the warm-started regime where the policy hardly moves.
+
+\section{Future work}
+\label{sec:future}
+
+The plan for the remaining phases (Section~\ref{sec:workplan}) is updated as follows, in order of priority.
+
+\begin{enumerate}
+  \item \textbf{Separate the effect of the warm start from the step size.} Cross the initialisation (cloned or random) with the actor learning rate ($10^{-4}$ or $3\times10^{-4}$). If cloning still hurts, test the remedies the results suggest: stopping behaviour cloning at the minimum of the validation loss, a larger entropy bonus, and a KL penalty towards the cloned policy that decays to zero.
+  \item \textbf{Repeat the reward and GAE ablations from scratch.} The comparison of potential-based shaping and the terminal evidence bonus (G4) and the sweep of the entity cost (G3) are only informative for a policy that moves. Five seeds will be used for every configuration.
+  \item \textbf{Fix GRPO and finish the optimiser comparison.} Run GRPO without standard-deviation normalisation (as in Dr.~GRPO) and REINFORCE from scratch, so that all optimisers are compared in the regime where learning happens.
+  \item \textbf{Scale up.} Train on the full HybridQA training set, for more iterations (PPO from scratch was still improving at 40), and with a horizon of $H=4$, since most episodes currently reach the horizon. Add cell- and column-level nodes so that in-table answers can be pointed at directly.
+  \item \textbf{Integration with LLM reasoners (G6).} Use the trained selector as the pruning step of an ODYSSEY-style hybrid graph and as a row pre-filter for Chain-of-Table, with the reasoner fixed, and report accuracy, prompt tokens and latency.
+  \item \textbf{Multi-table selection (G7).} Add table and join nodes and train with a reward from executing gold SQL on MMQA's three-table questions, subject to the licence of the available mirror.
+\end{enumerate}
+
+The main risk for the final submission is compute. The complete experimental suite of this report ran in 1.2 hours on a single T4 GPU, so the first four extensions are feasible on free GPU quotas, but the LLM-reader phase will need API access or a larger local GPU, and its cost will have to be bounded by caching reader outputs in the same way as here.

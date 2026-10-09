@@ -1,4 +1,92 @@
-\chapter{PLACEHOLDER results}
+\chapter{Preliminary Results}
 \label{ch:results}
-PLACEHOLDER
-\section{PLACEHOLDER}\label{sec:headroom}\label{sec:compute}\label{sec:future}
+
+All numbers in this chapter are on the complete HybridQA dev set (\nTest{} questions) unless stated otherwise, and every selector is paired with the same frozen MiniLM reader. Learned selectors are reported as mean and standard deviation over seeds, and their checkpoints were chosen on the validation split. Absolute scores are far below published HybridQA systems (Table~\ref{tab:hybridqa-published}), which fine-tune their readers on HybridQA or use large language models; here the reader is a small SQuAD model that was never trained on tables, and only the selector changes between rows. The comparison is therefore between selection strategies, not between complete question-answering systems.
+
+\section{Headroom for a learned selector}
+\label{sec:headroom}
+
+The first question is whether selection matters at all for this reader. Table~\ref{tab:main} answers it. When the reader is given the best traced gold path, an average of \itemsOracle{} entities, it reaches \fOracle{} F1. The best fixed heuristic, BM25 top-3, reaches \fBmThree{} F1 while passing almost twice as many entities, and the greedy rank-then-hop rule used by HYBRIDER-style pipelines reaches \fGreedy{}. A random walk over the same candidate sets scores below 10. The gap of more than 30 points between the heuristics and the oracle is the room a better selector can claim; it is large because the reader is good at extracting answers from the right evidence and poor at ignoring distractors. Dense retrieval, the selection step of TableRAG-style pipelines, is the weakest of the non-random heuristics at every $k$ (\fDenseTwo{} F1 at $k=2$). A likely reason is that the rows of one table are topically almost identical, so embedding similarity separates them poorly, whereas BM25 rewards exact matches of the names and numbers that usually identify the right row.
+
+\input{generated/table_main}
+
+\section{Main comparison}
+
+\paragraph{PPO from scratch is the best selector.} PPO trained from a random initialisation reaches \emScratch{} EM and \fScratch{}$\pm$\fScratchStd{} F1, the highest of all non-oracle selectors on every accuracy and evidence-recall metric except full gold-path coverage. Table~\ref{tab:tests} shows that its advantage is far outside the noise: \dScratchBc{} F1 over behaviour cloning (95\% interval [\dScratchBcLo, \dScratchBcHi]), \dScratchBm{} over the best heuristic (BM25 top-3; [\dScratchBmLo, \dScratchBmHi]) and \dScratchGreedy{} over the greedy rank-then-hop rule, with one-sided bootstrap $p$-values below 0.001 and every PPO run better than every run of each comparison method. The gain is not confined to one question type: in-table F1 rises from \ftabBc{} (BC) to \ftabScratch{}, and in-passage F1 from \fpsgBc{} to \fpsgScratch{}.
+
+\paragraph{Warm-started optimisers stay where behaviour cloning put them.} Behaviour cloning on the traced evidence gives \fBc{} F1, roughly level with the hybrid and BM25 heuristics but with fewer entities. PPO started from the cloned policy ends at \fPpo{}, a difference of \dPpoBc{} F1 ([\dPpoBcLo, \dPpoBcHi]), which is no difference at all. REINFORCE from the same start gains a small but significant \dReinforceBc{} F1 ([\dReinforceBcLo, \dReinforceBcHi]). GRPO is worse than its starting point, with a difference of \dGrpoBc{} F1 ([\dGrpoBcLo, \dGrpoBcHi]); Section~\ref{sec:dynamics} explains why.
+
+\input{generated/table_tests}
+
+\section{What the learned policy does differently}
+\label{sec:behaviour}
+
+Figure~\ref{fig:sizes} and the evidence columns of Table~\ref{tab:main} show that PPO from scratch has learned a different selection strategy rather than a better version of the cloned one. The cloned policy, like its traced targets, always selects exactly one row and adds a passage for 78\% of the questions. PPO from scratch selects three entities for 73\% of the questions, but on average only 0.69 of them are rows. For 35.4\% of the questions it selects no row at all, so all of its evidence comes from the globally best-matching passages; for 60.0\% it selects one row and for the remaining 4.6\% two or more. As a result the answer string is present in its evidence for \ansrecScratch\% of the questions, against \ansrecBc\% for behaviour cloning and \ansrecBmThree\% for BM25 top-3, and the entity holding a traced answer location is selected for \locScratch\% of the questions, against \locBc\%.
+
+Two checks guard against reading too much into this. Full gold-path coverage, which requires both the row and the passage of a traced path, is lower for PPO from scratch (\pathScratch\%) than for behaviour cloning (\pathBc\%), simply because the policy often skips the row; the answer-location metric shows that it still finds the answer-bearing entity more often. And right answers obtained without selecting any traced answer location are rare for every selector: the highest rate, for PPO from scratch, is 0.53\% of the questions. The improvement therefore does not come from accidental string matches elsewhere in the evidence.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.92\textwidth]{figures/sizes.pdf}
+\caption{Number of entities each selector passes to the reader on the dev set (learned selectors pooled over seeds), with the average numbers of rows and passages on the right.}
+\label{fig:sizes}
+\end{figure}
+
+Selecting more entities is not, by itself, what makes the difference. Figure~\ref{fig:tradeoff} places every selector by the amount of text it passes to the reader. PPO from scratch uses about as many words as BM25 top-3 (\wordsScratch{} against \wordsBmThree{}), but scores \dScratchBm{} F1 more; taking more entities from any heuristic ranking helps much less. Within the warm-started family the entity cost has little room to act: for $c$ between 0 and 0.1 the evidence length stays between 151 and 169 words, with no monotone trend beyond $c=0$, and F1 varies by less than one point.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/tradeoff.pdf}
+\caption{Dev F1 against the evidence passed to the reader. Grey: top-$k$ heuristics for $k=1,2,3$. Orange: warm-started PPO with entity cost $c\in\{0,0.02,0.05,0.1\}$ (seeds 0--2). Blue star: PPO from scratch (three seeds; bar: standard deviation).}
+\label{fig:tradeoff}
+\end{figure}
+
+\section{Learning dynamics}
+\label{sec:dynamics}
+
+Figure~\ref{fig:curves} shows validation F1 during training and Figure~\ref{fig:diagnostics} the training diagnostics; Table~\ref{tab:optim} summarises them.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.9\textwidth]{figures/curves.pdf}
+\caption{Validation F1 of the greedy policy during training (mean over seeds; band: $\pm$ one standard deviation). Every method sees 1{,}024 episodes per iteration. Episode~0 is the starting policy: the cloned policy for the warm-started methods, a random network for PPO from scratch.}
+\label{fig:curves}
+\end{figure}
+
+\paragraph{PPO from scratch.} The randomly initialised policy starts at \initScratch{} validation F1, passes every other selector within the first five iterations, and is still improving when training stops (best validation F1 \valScratch{}, reached at the last iteration for all three seeds). Its sampled training F1 and its greedy validation F1 stay close (0.36 and 0.34 at the end), and its critic reaches an explained variance of about \evScratch{}. Over training the policy uses slightly fewer entities (from 2.86 to \itemsEndScratch{} per episode) and ends more episodes with an explicit \STOP{} (from 9\% to 22\%), which is the per-entity cost at work.
+
+\paragraph{Warm-started PPO and REINFORCE.} Both start from the cloned policy at \initPpo{} validation F1. PPO's mean curve stays within one point of it, and REINFORCE gains one to two points. Their critics learn well (explained variance \evPpo{} and \evReinforce{}), and their sampled training F1 rises from 0.22 to 0.28--0.29, but the greedy validation score hardly follows. The policy updates are small: PPO's mean approximate KL per update is 0.003 and only 3\% of ratios are clipped, against 0.006 and 8\% for PPO from scratch, and the policy entropy falls from 0.80 to 0.40 nats. In words, the warm-started policies become more certain of the choices behaviour cloning taught them, and the improvement on training questions does not transfer. Behaviour cloning itself overfits: averaged over the five seeds, its training accuracy on oracle steps rises from 0.51 to 0.82 over eight epochs, while its validation loss is lowest after the third epoch and rises afterwards.
+
+\paragraph{GRPO.} GRPO's validation F1 falls from \initGrpo{} to about 13 within twenty iterations, and the number of entities per episode collapses from 1.7 to \itemsEndGrpo. On average \degenGrpo\% of its groups receive identical returns and therefore no gradient. We think the collapse comes from the remaining groups. When the four answers of a group are equally wrong, the returns differ only through the per-entity cost, and dividing by the small within-group standard deviation turns differences of 0.02 into advantages of order one, which teaches the policy to stop as early as possible. We did not log per-group answer scores, so this explanation is an inference from the collapse in entity counts, not a measurement. It is the failure mode \citet{liu2025understanding} attribute to standard-deviation normalisation, and it matches the advantage collapse reported by \citet{wang2026igpo}.
+
+\paragraph{Checkpoint selection.} The validation evaluation at iteration 5 happens before any actor update of the warm-started methods, because their critic-only warm-up lasts five iterations. For the iterate chosen at iteration 5, the reported model is therefore the cloned policy itself. This happened for PPO seed~0 among the main runs and for one or two seeds of several ablations (the ``Best it.'' column of Table~\ref{tab:ablation}); in all of these cases no later PPO iterate scored higher on validation, so the choice reflects the flat learning curves rather than changing the conclusions.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/diagnostics.pdf}
+\caption{Training diagnostics per iteration, averaged over seeds: (a) F1 of the sampled episodes on training questions, (b) entities selected per episode, (c) explained variance of the critic (PPO and REINFORCE).}
+\label{fig:diagnostics}
+\end{figure}
+
+\input{generated/table_optim}
+
+\section{Reward and advantage ablations}
+\label{sec:ablations}
+
+Table~\ref{tab:ablation} varies the evidence term, the answer metric, the GAE parameter and the entity cost of the warm-started PPO configuration. All rows lie within 0.8 F1 of each other, which is about twice the seed standard deviation, and no setting moves the policy far from the cloned one. The largest values come from the settings that give the policy the most freedom or the noisiest signal, $c=0$ (19.6 F1) and $\lambda=1$ (19.5), but these differences are not significant at three seeds. The comparison between potential-based shaping and a terminal evidence bonus (G4) is therefore inconclusive in the warm-started regime: neither form changed what PPO learned, which is what the theory predicts for shaping but not necessarily for the bonus. The informative version of this experiment is to repeat it from scratch, where the policy does move (Chapter~\ref{ch:conclusion}).
+
+\input{generated/table_ablation}
+
+\section{Generalisation checks}
+\label{sec:unseen}
+
+\paragraph{Unseen tables.} Because HybridQA's splits share tables, \testQuestionsWithTrainTable{} dev questions use a table that also occurs in our training subset. Table~\ref{tab:unseen} splits the dev set accordingly. On the questions whose table is unseen, PPO from scratch reaches \fScratchUnseen{} F1, against \fBcUnseen{} for behaviour cloning and \fBmThreeUnseen{} for BM25 top-3, so the gain does not depend on having seen the table.
+
+\input{generated/table_unseen}
+
+\paragraph{A second reader.} \input{generated/results_reader}
+
+\section{Compute}
+\label{sec:compute}
+
+Preparing the data (graph construction and embedding of 230{,}512 entity texts) took 5.2 hours on the laptop CPU, most of it under battery throttling. On the laptop, one reader call costs about 120~ms, so a single PPO run with the reader in the loop would take several hours. All reported training and evaluation therefore ran on one NVIDIA T4 GPU, where the complete suite (baselines, 5 behaviour-cloning runs, 42 reinforcement-learning runs, all dev evaluations and the second-reader experiment) took 1.17 hours. A PPO run of 40 iterations takes 1--3 minutes there (Table~\ref{tab:optim}), most of it Python-side environment stepping; the policy itself is too small to matter. The decomposable reader and its cache are what make this possible: every (question, entity) pair is read once and reused by all methods, seeds and iterations.

@@ -1,0 +1,42 @@
+<section id="problem" data-transition="fade" style="background:#FAF9F5;color:#3D4656;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:24px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#1C5CAB">1 · Problem &amp; motivation</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14213D">Every hop is a choice of evidence</h2>
+<p style="font-family:'Source Serif 4', Georgia, serif;font-size:32px;font-style:italic;line-height:1.35;color:#14213D">“What is the middle name of the player with the second most NFL career rushing yards?”</p>
+<div style="display:flex;flex-direction:row;align-items:center;gap:24px">
+<div style="flex:1;background:#EEF1F6;border-radius:12px;padding:24px 28px;display:flex;flex-direction:column;gap:6px">
+<p style="font-size:24px;font-weight:600;color:#1C5CAB">Hop 1 · table row</p>
+<p style="font-size:26px;color:#14213D">Rank 2 ; Player Walter Payton ; Yards 16,726</p>
+</div>
+<x-shape kind="arrow-right" style="background:#9AA3AF;width:56px;height:28px"></x-shape>
+<div style="flex:1;background:#EEF1F6;border-radius:12px;padding:24px 28px;display:flex;flex-direction:column;gap:6px">
+<p style="font-size:24px;font-weight:600;color:#1C5CAB">Hop 2 · linked passage</p>
+<p style="font-size:26px;color:#14213D">“Walter Jerry Payton (July 25, 1954 …)”</p>
+</div>
+<x-shape kind="arrow-right" style="background:#9AA3AF;width:56px;height:28px"></x-shape>
+<div style="width:260px;background:#14213D;border-radius:12px;padding:24px 28px;display:flex;flex-direction:column;gap:6px">
+<p style="font-size:24px;font-weight:600;color:#8CB8F0">Answer</p>
+<p style="font-size:26px;color:#F4F1EA">Jerry</p>
+</div>
+</div>
+<div style="display:flex;flex-direction:row;gap:48px">
+<div style="flex:1;display:flex;flex-direction:column;gap:12px">
+<h3 style="font-size:30px;font-weight:600;color:#14213D">Today: a fixed rule picks the evidence</h3>
+<ul style="font-size:26px;line-height:1.45">
+<li>HYBRIDER: greedy top-1 classifier, two steps</li>
+<li>TableRAG: embedding top-k retrieval</li>
+<li>Chain-of-Table, Dater: an LLM prompt</li>
+<li>ODYSSEY: threshold + 3-hop BFS (14 of 41 errors from selection)</li>
+</ul>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px">
+<h3 style="font-size:30px;font-weight:600;color:#14213D">Why that is a problem</h3>
+<ul style="font-size:26px;line-height:1.45">
+<li>Choices are scored by relevance now, not by the final answer</li>
+<li>Errors compound over hops; stopping is hand-coded</li>
+<li><b>Goal:</b> learn which entity to read next, and when to stop, from answer quality</li>
+</ul>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#6B7280">Example: HybridQA dev question 00153f694413a536 · 1 / 5</p>
+<aside>Multi-hop table questions need a chain of evidence: here, find the row whose rank is 2, follow the link from the player cell, and read the middle name in the passage. Each step is a decision about what to read next, and a wrong first step cannot be fixed by a good reader. Every existing pipeline makes this decision with a fixed rule: a greedy classifier in HYBRIDER, embedding similarity in TableRAG, an LLM prompt in Chain-of-Table and Dater, a similarity threshold plus breadth-first search in ODYSSEY, where 14 of 41 analysed errors come from selection. None of them learns the choice from whether the final answer is right, and all of them stop after a fixed number of steps. Our goal is to learn both the next entity and the stopping decision from answer quality, with reinforcement learning.</aside>
+</section>

@@ -5650,7 +5650,7 @@
   },
   {
    "qid": "e27cddf69a161096",
-   "pred": "Andaz",
+   "pred": "Nayyar",
    "gold": "Navketan Films",
    "type": null,
    "em": 0.0,
@@ -14992,7 +14992,7 @@
   },
   {
    "qid": "21df139b6503a32f",
-   "pred": "Andimadam",
+   "pred": "Kongu Nadu",
    "gold": "Coimbatore district",
    "type": null,
    "em": 0.0,

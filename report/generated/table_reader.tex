@@ -1,0 +1,25 @@
+\begin{table}[t]
+\centering
+\footnotesize
+\caption{Transfer to a second frozen reader (RoBERTa-base SQuAD~2.0) that was never used during training, on the first 1{,}000 dev questions (the dev file is ordered by a hashed question id). Each selector's evidence is exactly what it selected in the main evaluation; only the reader changes. The oracle is recomputed under the new reader. Left: the training reader's scores on the same questions.}
+\label{tab:reader}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+ & \multicolumn{2}{c}{Training reader (MiniLM)} & \multicolumn{2}{c}{Unseen reader (RoBERTa)} \\
+\cmidrule(lr){2-3}\cmidrule(l){4-5}
+Selector & EM & F1 & EM & F1 \\
+\midrule
+Dense top-2 (TableRAG-style) & 10.4 & 14.1 & 11.1 & 14.3 \\
+Hybrid top-2 & 14.9 & 19.5 & 16.1 & 20.2 \\
+Hybrid top-3 & 14.9 & 19.8 & 16.0 & 20.8 \\
+BM25 top-3 & 15.9 & 20.5 & 16.5 & 21.1 \\
+Greedy rank-then-hop (HYBRIDER-style) & 13.6 & 18.4 & 14.0 & 18.0 \\
+Behaviour cloning (BC) & 13.8\,{\scriptsize$\pm$0.6} & 19.1\,{\scriptsize$\pm$0.5} & 16.0\,{\scriptsize$\pm$0.5} & 20.5\,{\scriptsize$\pm$0.3} \\
+GRPO, warm-started & 10.9\,{\scriptsize$\pm$0.8} & 15.7\,{\scriptsize$\pm$0.9} & 12.0\,{\scriptsize$\pm$0.8} & 16.2\,{\scriptsize$\pm$1.0} \\
+PPO + GAE, warm-started from BC & 13.5\,{\scriptsize$\pm$0.6} & 18.9\,{\scriptsize$\pm$0.7} & 15.3\,{\scriptsize$\pm$0.8} & 20.0\,{\scriptsize$\pm$0.8} \\
+REINFORCE + baseline, warm-started & 15.0\,{\scriptsize$\pm$0.7} & 20.5\,{\scriptsize$\pm$0.7} & 16.3\,{\scriptsize$\pm$0.8} & 21.1\,{\scriptsize$\pm$0.8} \\
+PPO + GAE from scratch & 23.7\,{\scriptsize$\pm$0.1} & 28.7\,{\scriptsize$\pm$0.0} & 25.5\,{\scriptsize$\pm$0.3} & 30.8\,{\scriptsize$\pm$0.5} \\
+Oracle gold path & 49.0 & 56.7 & 54.2 & 61.4 \\
+\bottomrule
+\end{tabular}
+\end{table}

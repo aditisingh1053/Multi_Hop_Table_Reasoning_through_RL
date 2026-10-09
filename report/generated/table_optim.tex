@@ -1,0 +1,17 @@
+\begin{table}[t]
+\centering
+\footnotesize
+\caption{Training behaviour of the optimisers (same data, reward, evaluation and per-iteration episode budget). Init: initial validation F1 of the starting policy. Best val: validation F1 of the selected iterate (iteration in brackets, mean over seeds). EV: explained variance of the critic on the last batch. Items: entities per training episode at the last iteration. Time: minutes of training iterations per run (periodic validation excluded) on one T4 GPU.}
+\label{tab:optim}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+Method & Init & Best val (iter.) & Dev F1 & EV (end) & Items (end) & Time \\
+\midrule
+PPO + GAE from scratch & 15.8 & 33.9 (40) & 28.8\,{\scriptsize$\pm$0.3} & 0.55 & 2.69 & 2.2 \\
+PPO + GAE, warm-started from BC & 23.2 & 23.7 (17) & 18.9\,{\scriptsize$\pm$0.4} & 0.77 & 1.64 & 1.7 \\
+REINFORCE + baseline, warm-started & 23.2 & 25.1 (21) & 20.0\,{\scriptsize$\pm$0.5} & 0.76 & 1.72 & 1.2 \\
+GRPO, warm-started & 23.2 & 18.8 (5) & 16.1\,{\scriptsize$\pm$0.5} & n/a & 1.08 & 0.9 \\
+\bottomrule
+\end{tabular}
+\end{table}

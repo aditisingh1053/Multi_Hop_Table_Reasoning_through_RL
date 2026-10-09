@@ -71,7 +71,7 @@ RL results are easy to get wrong in ways that produce plausible numbers. The imp
 
 \paragraph{Correctness of the RL machinery.} Unit tests check that the normalisation and F1 reproduce the official script on hand-made cases; that candidates follow the graph (only rows before the first hop, the linked passage after its row is chosen, termination at the horizon); that potential-based shaping leaves the return of every tested episode unchanged while the terminal bonus does not; that GAE reduces to Monte-Carlo advantages at $\lambda=1$ and to one-step TD at $\lambda=0$; and that masked candidates and \STOP{} at $t=0$ receive exactly zero probability. At run time the environment asserts that no entity is selected twice and that \STOP{} is only taken when allowed. Masks are stored with each transition and re-applied in every update.
 
-\paragraph{Metrics.} EM and F1 use the normalisation of HybridQA's official evaluation script, and the in-table and in-passage breakdowns use the official dev reference lists. Every number in the results chapter is written into the \LaTeX{} sources by the scripts that compute it, so no figure is copied by hand.
+\paragraph{Metrics.} EM and F1 use the normalisation of HybridQA's official evaluation script, and the in-table and in-passage breakdowns use the official dev reference lists. Every result table and figure, and the main numbers quoted in the text, are written into the \LaTeX{} sources by the scripts that compute them; the few remaining numbers in the text were read from the same output files.
 
 \paragraph{Reproducibility.} Each run fixes the PyTorch and NumPy seeds; behaviour cloning and RL for seed $s$ start from the cloned policy of the same seed. Reader outputs are cached per reader model, per quantisation setting and per (question, entity) pair, so a cached answer is exactly what the reader would return, and the cache cannot mix outputs of different readers.
 
@@ -90,8 +90,8 @@ Risk & Mitigation & Status \\
 \midrule
 Reader calls dominate training time & Decomposable reader with a shared (question, entity) cache; warm start keeps exploration focused & resolved (Section~\ref{sec:compute}) \\
 Too little headroom between heuristics and oracle & Measured before any RL training (Section~\ref{sec:headroom}) & resolved \\
-PPO collapses to a fixed strategy, as in \citet{jose2024qatexttablesdrl} & Entity-level actions; warm start; entropy bonus; per-seed reporting & monitored \\
-Untrained critic destroys the warm start & Five critic-only iterations; small actor learning rate; KL early stopping; a pilot run checked the critic before the main runs & monitored \\
+PPO collapses to a fixed strategy, as in \citet{jose2024qatexttablesdrl} & Entity-level actions; warm start; entropy bonus; per-seed reporting & did not occur from scratch; warm-started PPO stayed at the cloned policy (Ch.~\ref{ch:results}) \\
+Untrained critic destroys the warm start & Five critic-only iterations; small actor learning rate; KL early stopping; a pilot run checked the critic before the main runs & did not occur; the warm start was rarely left at all \\
 Noisy traced evidence misguides BC and the evidence reward & Set-valued targets; evidence enters as shaping by default; right-from-wrong-evidence rate reported & partly open \\
 Reader artefacts are optimised instead of evidence quality & Evaluation with a second reader never used in training & tested \\
 Seed variance hides real differences & Five seeds for main methods; paired bootstrap & addressed \\

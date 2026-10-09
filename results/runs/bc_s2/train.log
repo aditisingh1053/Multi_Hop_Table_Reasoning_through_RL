@@ -1,0 +1,9 @@
+[bc seed 2] oracle steps: train 13179 (skipped 0 questions), val 2702
+[bc seed 2] epoch 1 loss 1.575 acc 0.508 val loss 0.925 step-acc 0.649 val F1 21.56 EM 17.20 (2s)
+[bc seed 2] epoch 2 loss 0.918 acc 0.644 val loss 0.879 step-acc 0.665 val F1 22.47 EM 18.30 (2s)
+[bc seed 2] epoch 3 loss 0.834 acc 0.695 val loss 0.880 step-acc 0.670 val F1 21.01 EM 17.00 (2s)
+[bc seed 2] epoch 4 loss 0.764 acc 0.723 val loss 0.908 step-acc 0.674 val F1 24.25 EM 19.80 (2s)
+[bc seed 2] epoch 5 loss 0.696 acc 0.752 val loss 0.923 step-acc 0.665 val F1 22.55 EM 18.70 (2s)
+[bc seed 2] epoch 6 loss 0.625 acc 0.782 val loss 0.958 step-acc 0.663 val F1 22.30 EM 18.40 (2s)
+[bc seed 2] epoch 7 loss 0.567 acc 0.801 val loss 1.004 step-acc 0.665 val F1 22.02 EM 18.10 (2s)
+[bc seed 2] epoch 8 loss 0.527 acc 0.819 val loss 1.036 step-acc 0.659 val F1 21.49 EM 17.80 (2s)

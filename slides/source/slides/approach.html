@@ -1,0 +1,26 @@
+<section id="approach" data-transition="fade" style="background:#FAF9F5;color:#3D4656;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:24px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#1C5CAB">3 · Dataset &amp; approach</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14213D">HybridQA as a graph; PPO picks the next entity</h2>
+<div style="display:flex;flex-direction:row;gap:48px">
+<div style="width:560px;background:#EEF1F6;border-radius:16px;padding:36px;display:flex;flex-direction:column;gap:16px">
+<h3 style="font-size:30px;font-weight:600;color:#14213D">Data: HybridQA</h3>
+<p style="font-size:26px;line-height:1.4">Wikipedia tables whose cells link to passages (Chen et al., 2020).</p>
+<p style="font-size:26px;line-height:1.4">Per question: 15.9 rows + 33.2 passages = 49 entities.</p>
+<p style="font-size:26px;line-height:1.4">Gold evidence is traced by string match: noisy, unique for only 56% of questions.</p>
+<p style="font-size:26px;line-height:1.4;color:#14213D"><b>5,000</b> train · <b>1,000</b> val (unseen tables) · <b>3,466</b> dev = test</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px">
+<table style="font-size:26px;color:#3D4656">
+<tr><th style="width:24%;text-align:left;color:#14213D">MDP</th><th style="width:76%;text-align:left;color:#14213D">Design</th></tr>
+<tr><td>State</td><td>question, selected evidence, last entity (frozen MiniLM + 22 features)</td></tr>
+<tr><td>Actions</td><td>any row · top-5 passages · passages linked to chosen rows · STOP</td></tr>
+<tr><td>Reward</td><td>reader F1 − 0.02 per entity (+ evidence shaping)</td></tr>
+<tr><td>Policy</td><td>pointer actor + separate critic, masked softmax</td></tr>
+<tr><td>Training</td><td>PPO + GAE; compared with BC, REINFORCE, GRPO</td></tr>
+<tr><td>Reader</td><td>frozen MiniLM SQuAD 2.0, cached per (question, entity)</td></tr>
+</table>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#6B7280">Shaping uses Φ = κ·ψ(evidence recall), zero at the terminal state, so it cannot change the optimal policy · 3 / 5</p>
+<aside>Data: HybridQA, Wikipedia tables whose cells are hyperlinked to passages. For each question we build a graph with one node per row and one per linked passage, about 49 entities per question. Gold evidence exists only as answer locations traced by string matching, which is noisy and unique for only about 56% of questions, so we treat it as a set of acceptable targets. We train on 5,000 questions, select checkpoints on 1,000 questions from different tables, and test on the full official dev set of 3,466 questions. The MDP: the state is the question, the evidence chosen so far and the last entity, embedded once with a frozen MiniLM encoder plus 22 hand-made features. The actions are any row, the five best-matching passages, passages linked from chosen rows, and STOP. The reward is the frozen reader's F1 on the chosen evidence, minus 0.02 per entity, plus an optional evidence-recall term written as potential-based shaping, which provably leaves the optimal policy unchanged. The policy is a pointer network with a separate critic, trained with PPO and GAE, and we compare it with behaviour cloning, REINFORCE and GRPO under identical rewards.</aside>
+</section>

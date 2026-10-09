@@ -1,0 +1,27 @@
+<section id="related" data-transition="fade" style="background:#FAF9F5;color:#3D4656;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:24px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#1C5CAB">2 · Related work</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14213D">Closest work acts too coarsely, or not on tables</h2>
+<div style="display:flex;flex-direction:row;gap:32px">
+<div style="flex:1;background:#FFFEFA;border:1px solid #DDE2EA;border-radius:16px;padding:36px;display:flex;flex-direction:column;gap:14px">
+<h3 style="font-family:'Source Serif 4', Georgia, serif;font-size:34px;font-weight:600;line-height:1.2;color:#14213D">José et al. (BRACIS 2024)</h3>
+<p style="font-size:26px;line-height:1.4">PPO and DQN choose a retrieval module per step (texts, tables, answer) on OTT-QA.</p>
+<p style="font-size:26px;line-height:1.4">Best agent: 19.03 F1, the same as always retrieving text.</p>
+<p style="font-size:24px;font-weight:600;color:#1C5CAB">How we differ</p>
+<p style="font-size:26px;line-height:1.4;color:#14213D">Actions are single rows and passages, with a learned STOP.</p>
+</div>
+<div style="flex:1;background:#FFFEFA;border:1px solid #DDE2EA;border-radius:16px;padding:36px;display:flex;flex-direction:column;gap:14px">
+<h3 style="font-family:'Source Serif 4', Georgia, serif;font-size:34px;font-weight:600;line-height:1.2;color:#14213D">Learning to Reduce (2024), Table-R1 (2025)</h3>
+<p style="font-size:26px;line-height:1.4">RL picks rows and columns once, inside a single table, for a reader or in the model's reasoning.</p>
+<p style="font-size:24px;font-weight:600;color:#1C5CAB">How we differ</p>
+<p style="font-size:26px;line-height:1.4;color:#14213D">Sequential hops across a table and its linked passages, rewarded by the final answer.</p>
+</div>
+<div style="flex:1;background:#FFFEFA;border:1px solid #DDE2EA;border-radius:16px;padding:36px;display:flex;flex-direction:column;gap:14px">
+<h3 style="font-family:'Source Serif 4', Georgia, serif;font-size:34px;font-weight:600;line-height:1.2;color:#14213D">s3 (EMNLP 2025)</h3>
+<p style="font-size:26px;line-height:1.4">A PPO searcher selects documents and stops; a frozen generator answers. Text only.</p>
+<p style="font-size:24px;font-weight:600;color:#1C5CAB">How we differ</p>
+<p style="font-size:26px;line-height:1.4;color:#14213D">Same frozen-reader idea on tables and hyperlinks, with a pointer policy over an entity graph.</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#6B7280">Survey: 100+ papers checked, 12 ranked, 7 research gaps (report, Ch. 3–4) · 2 / 5</p>
+<aside>Three papers come closest. José et al., BRACIS 2024, is the only RL controller for table-plus-text QA: PPO or DQN chooses between retrieving texts, retrieving tables and answering on OTT-QA, and the best agent scored 19.03 F1, exactly what the fixed "always retrieve text" sequence scores. The authors themselves note that tables were too coarse and suggest splitting them into rows. Learning to Reduce and the region-based Table-R1 do use RL to decide which rows and columns to look at, but they decide once, inside a single table; Learning to Reduce reaches 87% column recall on HybridQA zero-shot. s3 is the cleanest frozen-reader design: a PPO-trained searcher selects documents and decides when to stop, while a frozen generator answers, but only over text. Our project combines the three: entity-level actions on tables and linked passages, a learned stop, a frozen reader, and PPO. The literature search covered more than a hundred candidate papers; the report ranks twelve and derives seven gaps.</aside>
+</section>

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Multi-Hop Table Reasoning via RL</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400..700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+@page { size: 1920px 1080px; margin: 0; }
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: #5f6670; }
+section { width: 1920px; height: 1080px; position: relative; overflow: hidden;
+          break-after: page; page-break-after: always; margin: 0 auto 24px auto; }
+h1, h2, h3, p, ul, ol { margin: 0; }
+ul, ol { padding-left: 1.25em; }
+li + li { margin-top: 4px; }
+table { border-collapse: collapse; width: 100%; }
+th, td { padding: 0.35em 0.6em; border-bottom: 1px solid #D5DAE3; text-align: left; vertical-align: top; }
+th { font-weight: 600; }
+aside { display: none; }
+@media print { html, body { background: none; } section { margin: 0; } }
+</style>
+</head>
+<body>
+<section id="cover" data-transition="fade" style="background:#14213D;color:#E8E6DF;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;justify-content:center;gap:36px">
+<p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#8CB8F0">CS769 · Optimization in ML · Project progress</p>
+<h1 style="font-family:'Source Serif 4', Georgia, serif;font-size:88px;font-weight:600;line-height:1.1;color:#F4F1EA">Learning Multi-Hop Table Reasoning through Reinforcement Learning</h1>
+<p style="font-size:36px;line-height:1.35;color:#D3D8E2">PPO-based entity selection for decision making</p>
+<div style="display:flex;flex-direction:column;gap:10px">
+<p style="font-size:30px;font-weight:500;color:#F4F1EA">Aakash Gupta (23B0953) · Aditi Singh (23B1053)</p>
+<p style="font-size:26px;color:#AEB7C6">TA: Jahanvi Rajput · Department of CSE, IIT Bombay · October 2026</p>
+</div>
+<aside>Title slide. One sentence to open: we treat the question "which piece of table evidence should the system read next, and when should it stop" as a reinforcement-learning problem, and train the selector with PPO against the answers of a frozen reader.</aside>
+</section>
+<section id="problem" data-transition="fade" style="background:#FAF9F5;color:#3D4656;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:24px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#1C5CAB">1 · Problem &amp; motivation</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14213D">Every hop is a choice of evidence</h2>
+<p style="font-family:'Source Serif 4', Georgia, serif;font-size:32px;font-style:italic;line-height:1.35;color:#14213D">“What is the middle name of the player with the second most NFL career rushing yards?”</p>
+<div style="display:flex;flex-direction:row;align-items:center;gap:24px">
+<div style="flex:1;background:#EEF1F6;border-radius:12px;padding:24px 28px;display:flex;flex-direction:column;gap:6px">
+<p style="font-size:24px;font-weight:600;color:#1C5CAB">Hop 1 · table row</p>
+<p style="font-size:26px;color:#14213D">Rank 2 ; Player Walter Payton ; Yards 16,726</p>
+</div>
+<svg width="56" height="28" viewBox="0 0 56 28" style="flex:none" aria-label="arrow"><polygon points="0,9.0 33.6,9.0 33.6,0 56,14.0 33.6,28 33.6,19.0 0,19.0" fill="#9AA3AF"/></svg>
+<div style="flex:1;background:#EEF1F6;border-radius:12px;padding:24px 28px;display:flex;flex-direction:column;gap:6px">
+<p style="font-size:24px;font-weight:600;color:#1C5CAB">Hop 2 · linked passage</p>
+<p style="font-size:26px;color:#14213D">“Walter Jerry Payton (July 25, 1954 …)”</p>
+</div>
+<svg width="56" height="28" viewBox="0 0 56 28" style="flex:none" aria-label="arrow"><polygon points="0,9.0 33.6,9.0 33.6,0 56,14.0 33.6,28 33.6,19.0 0,19.0" fill="#9AA3AF"/></svg>
+<div style="width:260px;background:#14213D;border-radius:12px;padding:24px 28px;display:flex;flex-direction:column;gap:6px">
+<p style="font-size:24px;font-weight:600;color:#8CB8F0">Answer</p>
+<p style="font-size:26px;color:#F4F1EA">Jerry</p>
+</div>
+</div>
+<div style="display:flex;flex-direction:row;gap:48px">
+<div style="flex:1;display:flex;flex-direction:column;gap:12px">
+<h3 style="font-size:30px;font-weight:600;color:#14213D">Today: a fixed rule picks the evidence</h3>
+<ul style="font-size:26px;line-height:1.45">
+<li>HYBRIDER: greedy top-1 classifier, two steps</li>
+<li>TableRAG: embedding top-k retrieval</li>
+<li>Chain-of-Table, Dater: an LLM prompt</li>
+<li>ODYSSEY: threshold + 3-hop BFS (14 of 41 errors from selection)</li>
+</ul>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px">
+<h3 style="font-size:30px;font-weight:600;color:#14213D">Why that is a problem</h3>
+<ul style="font-size:26px;line-height:1.45">
+<li>Choices are scored by relevance now, not by the final answer</li>
+<li>Errors compound over hops; stopping is hand-coded</li>
+<li><b>Goal:</b> learn which entity to read next, and when to stop, from answer quality</li>
+</ul>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#6B7280">Example: HybridQA dev question 00153f694413a536 · 1 / 5</p>
+<aside>Multi-hop table questions need a chain of evidence: here, find the row whose rank is 2, follow the link from the player cell, and read the middle name in the passage. Each step is a decision about what to read next, and a wrong first step cannot be fixed by a good reader. Every existing pipeline makes this decision with a fixed rule: a greedy classifier in HYBRIDER, embedding similarity in TableRAG, an LLM prompt in Chain-of-Table and Dater, a similarity threshold plus breadth-first search in ODYSSEY, where 14 of 41 analysed errors come from selection. None of them learns the choice from whether the final answer is right, and all of them stop after a fixed number of steps. Our goal is to learn both the next entity and the stopping decision from answer quality, with reinforcement learning.</aside>
+</section>
+<section id="related" data-transition="fade" style="background:#FAF9F5;color:#3D4656;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:24px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#1C5CAB">2 · Related work</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14213D">Closest work acts too coarsely, or not on tables</h2>
+<div style="display:flex;flex-direction:row;gap:32px">
+<div style="flex:1;background:#FFFEFA;border:1px solid #DDE2EA;border-radius:16px;padding:36px;display:flex;flex-direction:column;gap:14px">
+<h3 style="font-family:'Source Serif 4', Georgia, serif;font-size:34px;font-weight:600;line-height:1.2;color:#14213D">José et al. (BRACIS 2024)</h3>
+<p style="font-size:26px;line-height:1.4">PPO and DQN choose a retrieval module per step (texts, tables, answer) on OTT-QA.</p>
+<p style="font-size:26px;line-height:1.4">Best agent: 19.03 F1, the same as always retrieving text.</p>
+<p style="font-size:24px;font-weight:600;color:#1C5CAB">How we differ</p>
+<p style="font-size:26px;line-height:1.4;color:#14213D">Actions are single rows and passages, with a learned STOP.</p>
+</div>
+<div style="flex:1;background:#FFFEFA;border:1px solid #DDE2EA;border-radius:16px;padding:36px;display:flex;flex-direction:column;gap:14px">
+<h3 style="font-family:'Source Serif 4', Georgia, serif;font-size:34px;font-weight:600;line-height:1.2;color:#14213D">Learning to Reduce (2024), Table-R1 (2025)</h3>
+<p style="font-size:26px;line-height:1.4">RL picks rows and columns once, inside a single table, for a reader or in the model's reasoning.</p>
+<p style="font-size:24px;font-weight:600;color:#1C5CAB">How we differ</p>
+<p style="font-size:26px;line-height:1.4;color:#14213D">Sequential hops across a table and its linked passages, rewarded by the final answer.</p>
+</div>
+<div style="flex:1;background:#FFFEFA;border:1px solid #DDE2EA;border-radius:16px;padding:36px;display:flex;flex-direction:column;gap:14px">
+<h3 style="font-family:'Source Serif 4', Georgia, serif;font-size:34px;font-weight:600;line-height:1.2;color:#14213D">s3 (EMNLP 2025)</h3>
+<p style="font-size:26px;line-height:1.4">A PPO searcher selects documents and stops; a frozen generator answers. Text only.</p>
+<p style="font-size:24px;font-weight:600;color:#1C5CAB">How we differ</p>
+<p style="font-size:26px;line-height:1.4;color:#14213D">Same frozen-reader idea on tables and hyperlinks, with a pointer policy over an entity graph.</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#6B7280">Survey: 100+ papers checked, 12 ranked, 7 research gaps (report, Ch. 3–4) · 2 / 5</p>
+<aside>Three papers come closest. José et al., BRACIS 2024, is the only RL controller for table-plus-text QA: PPO or DQN chooses between retrieving texts, retrieving tables and answering on OTT-QA, and the best agent scored 19.03 F1, exactly what the fixed "always retrieve text" sequence scores. The authors themselves note that tables were too coarse and suggest splitting them into rows. Learning to Reduce and the region-based Table-R1 do use RL to decide which rows and columns to look at, but they decide once, inside a single table; Learning to Reduce reaches 87% column recall on HybridQA zero-shot. s3 is the cleanest frozen-reader design: a PPO-trained searcher selects documents and decides when to stop, while a frozen generator answers, but only over text. Our project combines the three: entity-level actions on tables and linked passages, a learned stop, a frozen reader, and PPO. The literature search covered more than a hundred candidate papers; the report ranks twelve and derives seven gaps.</aside>
+</section>
+<section id="approach" data-transition="fade" style="background:#FAF9F5;color:#3D4656;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:24px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#1C5CAB">3 · Dataset &amp; approach</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14213D">HybridQA as a graph; PPO picks the next entity</h2>
+<div style="display:flex;flex-direction:row;gap:48px">
+<div style="width:560px;background:#EEF1F6;border-radius:16px;padding:36px;display:flex;flex-direction:column;gap:16px">
+<h3 style="font-size:30px;font-weight:600;color:#14213D">Data: HybridQA</h3>
+<p style="font-size:26px;line-height:1.4">Wikipedia tables whose cells link to passages (Chen et al., 2020).</p>
+<p style="font-size:26px;line-height:1.4">Per question: 15.9 rows + 33.2 passages = 49 entities.</p>
+<p style="font-size:26px;line-height:1.4">Gold evidence is traced by string match: noisy, unique for only 56% of questions.</p>
+<p style="font-size:26px;line-height:1.4;color:#14213D"><b>5,000</b> train · <b>1,000</b> val (unseen tables) · <b>3,466</b> dev = test</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px">
+<table style="font-size:26px;color:#3D4656">
+<tr><th style="width:24%;text-align:left;color:#14213D">MDP</th><th style="width:76%;text-align:left;color:#14213D">Design</th></tr>
+<tr><td>State</td><td>question, selected evidence, last entity (frozen MiniLM + 22 features)</td></tr>
+<tr><td>Actions</td><td>any row · top-5 passages · passages linked to chosen rows · STOP</td></tr>
+<tr><td>Reward</td><td>reader F1 − 0.02 per entity (+ evidence shaping)</td></tr>
+<tr><td>Policy</td><td>pointer actor + separate critic, masked softmax</td></tr>
+<tr><td>Training</td><td>PPO + GAE; compared with BC, REINFORCE, GRPO</td></tr>
+<tr><td>Reader</td><td>frozen MiniLM SQuAD 2.0, cached per (question, entity)</td></tr>
+</table>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#6B7280">Shaping uses Φ = κ·ψ(evidence recall), zero at the terminal state, so it cannot change the optimal policy · 3 / 5</p>
+<aside>Data: HybridQA, Wikipedia tables whose cells are hyperlinked to passages. For each question we build a graph with one node per row and one per linked passage, about 49 entities per question. Gold evidence exists only as answer locations traced by string matching, which is noisy and unique for only about 56% of questions, so we treat it as a set of acceptable targets. We train on 5,000 questions, select checkpoints on 1,000 questions from different tables, and test on the full official dev set of 3,466 questions. The MDP: the state is the question, the evidence chosen so far and the last entity, embedded once with a frozen MiniLM encoder plus 22 hand-made features. The actions are any row, the five best-matching passages, passages linked from chosen rows, and STOP. The reward is the frozen reader's F1 on the chosen evidence, minus 0.02 per entity, plus an optional evidence-recall term written as potential-based shaping, which provably leaves the optimal policy unchanged. The policy is a pointer network with a separate critic, trained with PPO and GAE, and we compare it with behaviour cloning, REINFORCE and GRPO under identical rewards.</aside>
+</section>
+<section id="progress" data-transition="fade" style="background:#FAF9F5;color:#3D4656;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:28px">
+<p style="font-size:24px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#1C5CAB">4 · Progress so far</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14213D">PPO from scratch beats the best heuristic by 8.0 F1</h2>
+<div style="display:flex;flex-direction:row;gap:56px">
+<div style="width:1080px;display:flex;flex-direction:column;gap:10px">
+<p style="font-size:24px;color:#6B7280">Dev F1 on HybridQA (3,466 questions), same frozen reader for every selector</p>
+<div style="display:flex;flex-direction:row;align-items:center;gap:16px"><p style="width:420px;font-size:24px;text-align:right">Oracle evidence (upper bound)</p><div style="width:557px;height:32px;background:#E3E7EE;border:1px dashed #9AA3AF;border-radius:0 6px 6px 0"></div><p style="font-size:24px;font-weight:600;color:#14213D">55.7</p></div>
+<div style="display:flex;flex-direction:row;align-items:center;gap:16px"><p style="width:420px;font-size:24px;text-align:right;color:#14213D"><b>PPO from scratch (ours)</b></p><div style="width:288px;height:32px;background:#2A78D6;border-radius:0 6px 6px 0"></div><p style="font-size:24px;font-weight:600;color:#14213D">28.8</p></div>
+<div style="display:flex;flex-direction:row;align-items:center;gap:16px"><p style="width:420px;font-size:24px;text-align:right">BM25 top-3 (best heuristic)</p><div style="width:208px;height:32px;background:#9AA3AF;border-radius:0 6px 6px 0"></div><p style="font-size:24px;font-weight:600;color:#14213D">20.8</p></div>
+<div style="display:flex;flex-direction:row;align-items:center;gap:16px"><p style="width:420px;font-size:24px;text-align:right">REINFORCE, warm-started</p><div style="width:200px;height:32px;background:#9AA3AF;border-radius:0 6px 6px 0"></div><p style="font-size:24px;font-weight:600;color:#14213D">20.0</p></div>
+<div style="display:flex;flex-direction:row;align-items:center;gap:16px"><p style="width:420px;font-size:24px;text-align:right">Behaviour cloning</p><div style="width:190px;height:32px;background:#9AA3AF;border-radius:0 6px 6px 0"></div><p style="font-size:24px;font-weight:600;color:#14213D">19.0</p></div>
+<div style="display:flex;flex-direction:row;align-items:center;gap:16px"><p style="width:420px;font-size:24px;text-align:right">PPO, warm-started from BC</p><div style="width:189px;height:32px;background:#9AA3AF;border-radius:0 6px 6px 0"></div><p style="font-size:24px;font-weight:600;color:#14213D">18.9</p></div>
+<div style="display:flex;flex-direction:row;align-items:center;gap:16px"><p style="width:420px;font-size:24px;text-align:right">Greedy rank-then-hop</p><div style="width:174px;height:32px;background:#9AA3AF;border-radius:0 6px 6px 0"></div><p style="font-size:24px;font-weight:600;color:#14213D">17.4</p></div>
+<div style="display:flex;flex-direction:row;align-items:center;gap:16px"><p style="width:420px;font-size:24px;text-align:right">GRPO, warm-started</p><div style="width:161px;height:32px;background:#9AA3AF;border-radius:0 6px 6px 0"></div><p style="font-size:24px;font-weight:600;color:#14213D">16.1</p></div>
+<div style="display:flex;flex-direction:row;align-items:center;gap:16px"><p style="width:420px;font-size:24px;text-align:right">Dense top-2 (TableRAG-style)</p><div style="width:137px;height:32px;background:#9AA3AF;border-radius:0 6px 6px 0"></div><p style="font-size:24px;font-weight:600;color:#14213D">13.7</p></div>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:20px">
+<div style="display:flex;flex-direction:column;gap:4px">
+<p style="font-family:'Source Serif 4', Georgia, serif;font-size:120px;font-weight:600;line-height:1;color:#2A78D6">+8.0</p>
+<p style="font-size:24px;line-height:1.4;color:#6B7280">F1 over the best heuristic<br>95% CI [6.9, 9.1] · p &lt; 0.001</p>
+</div>
+<ul style="font-size:26px;line-height:1.4;color:#3D4656">
+<li>+9.8 F1 over behaviour cloning</li>
+<li>Unseen tables: 28.6 vs 18.8 for BC</li>
+<li>Unseen reader: 30.8 vs 21.1 for BM25</li>
+<li>Warm start traps PPO at BC; GRPO shrinks to ~1 entity in training</li>
+</ul>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#6B7280">Done: survey · MDP · tested code · 47 runs in 1.2 h on one T4 · 65-page report · 4 / 5</p>
+<aside>Performance. Every selector here feeds the same frozen reader on all 3,466 HybridQA dev questions. If the reader is handed the correct evidence it reaches 55.7 F1, so most of the loss comes from selection. The best fixed heuristic, BM25 top-3, reaches 20.8; the HYBRIDER-style greedy rule 17.4; TableRAG-style dense retrieval 13.7. Our PPO policy trained from scratch reaches 28.8 F1, plus or minus 0.3 over three seeds: 8.0 points above the best heuristic with a 95% confidence interval of 6.9 to 9.1, and 9.8 points above imitating the annotated evidence. Every PPO run beats every run of every other method. The gain holds on tables never seen in training, 28.6 against 18.8 for behaviour cloning, and with a second reader the policy never trained with, 30.8 against 21.1 for BM25 top-3. The policy wins by learning a different strategy: it often skips the row and collects two or three passages, so the answer is in its evidence for 50% of questions against 36% for behaviour cloning, using about as many words as top-3 retrieval. Two negative results matter just as much: starting PPO from the behaviour-cloned policy left it exactly where cloning put it, and GRPO collapsed to stopping after one entity, most likely because its group normalisation amplifies the small per-entity cost. Done so far: the survey, the MDP formulation, unit-tested code, 47 training runs that take 1.2 hours on one T4 GPU, and the report.</aside>
+</section>
+<section id="next" data-transition="fade" style="background:#EEF1F6;color:#3D4656;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:24px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#1C5CAB">5 · Next steps &amp; challenges</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14213D">Untangle the warm start, then plug in LLM readers</h2>
+<div style="display:flex;flex-direction:row;gap:48px">
+<div style="flex:3;display:flex;flex-direction:column;gap:14px">
+<h3 style="font-size:30px;font-weight:600;color:#14213D">Plan to the final submission</h3>
+<ol style="font-size:26px;line-height:1.45">
+<li>Warm start vs step size: cloned or random start × actor LR 1e-4 or 3e-4</li>
+<li>Repeat the reward, GAE and entity-cost ablations from scratch, 5 seeds each</li>
+<li>Fix GRPO (no std normalisation, as in Dr. GRPO); REINFORCE from scratch</li>
+<li>Scale up: full training set, more iterations, horizon 4, cell-level nodes</li>
+<li>Drop the selector into ODYSSEY-style graphs and Chain-of-Table with an LLM reader</li>
+<li>Stretch: multi-table joins on MMQA with a SQL-execution reward</li>
+</ol>
+</div>
+<div style="flex:2;background:#FAF9F5;border-radius:16px;padding:36px;display:flex;flex-direction:column;gap:14px">
+<h3 style="font-size:30px;font-weight:600;color:#14213D">Challenges and blockers</h3>
+<ul style="font-size:26px;line-height:1.45">
+<li>Compute: the laptop CPU throttles; GPU quota needed (full suite 1.2 h on a T4)</li>
+<li>LLM readers cost money or a larger GPU; answers must be cached</li>
+<li>Gold evidence is traced by string match: about 15% wrong</li>
+<li>MMQA's official data link has expired; the mirror has no licence</li>
+</ul>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#6B7280">Full plan, risk register and limitations: report, Chapters 7, 10 and 11 · 5 / 5</p>
+<aside>Next steps, in priority order. First, separate the two things that changed between our best and worst PPO runs: the starting point and the learning rate, with a two-by-two experiment, and try remedies for the cloned start such as stopping behaviour cloning early. Second, repeat the reward and GAE ablations from scratch, because in the warm-started regime nothing moved, so they could not answer the question about shaping versus a terminal bonus. Third, fix GRPO by removing the standard-deviation normalisation, and run REINFORCE from scratch to complete the optimiser comparison. Fourth, scale up: the full training set, longer training since the curve had not flattened, a horizon of four, and cell-level nodes. Fifth, the integration claim: put the trained selector into an ODYSSEY-style hybrid graph and in front of Chain-of-Table with an LLM reader. Multi-table joins on MMQA are a stretch goal. The main blockers are compute, the cost of LLM readers, noisy gold evidence, and the MMQA data situation.</aside>
+</section>
+</body>
+</html>

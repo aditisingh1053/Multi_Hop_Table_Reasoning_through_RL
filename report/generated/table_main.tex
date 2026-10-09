@@ -1,0 +1,33 @@
+\begin{table}[t]
+\centering
+\footnotesize
+\caption{Results on the HybridQA dev set (\nTest{} questions) with the same frozen reader for every selector. Learned selectors: mean $\pm$ standard deviation over seeds (number of seeds in brackets). F1$_\mathrm{tab}$, F1$_\mathrm{psg}$: questions whose answer is in a cell (\nTestTypeTable) or a passage (\nTestTypePassage). AnsRec: answer string present in the evidence. Loc: the entity holding a traced answer location is selected. Path: a traced gold path is fully covered (row and passage). Items, Words: evidence passed to the reader.}
+\label{tab:main}
+\setlength{\tabcolsep}{2.9pt}
+\begin{tabular}{@{}lccccccccc@{}}
+\toprule
+Selector & EM & F1 & F1$_\mathrm{tab}$ & F1$_\mathrm{psg}$ & AnsRec & Loc & Path & Items & Words \\
+\midrule
+\multicolumn{10}{@{}l}{\textit{No learning}} \\
+Random walk, $k{=}2$ [3] & 5.5\,{\scriptsize$\pm$0.1} & 8.6\,{\scriptsize$\pm$0.2} & 14.6 & 4.9 & 12.7 & 12.2 & 7.4 & 2.00 & 136 \\
+Random walk, $k{=}3$ [3] & 6.5\,{\scriptsize$\pm$0.3} & 9.6\,{\scriptsize$\pm$0.3} & 15.3 & 6.1 & 17.7 & 17.4 & 10.7 & 3.00 & 214 \\
+BM25 top-2 & 13.8 & 18.6 & 21.0 & 17.6 & 29.1 & 27.7 & 10.7 & 2.00 & 219 \\
+BM25 top-3 & 15.9 & 20.8 & 21.7 & 21.0 & 37.7 & 36.4 & 18.5 & 3.00 & 333 \\
+Dense top-2 (TableRAG) & 10.0 & 13.7 & 19.2 & 10.7 & 21.1 & 20.9 & 12.2 & 2.00 & 151 \\
+Dense top-3 & 11.1 & 14.8 & 20.3 & 11.8 & 27.5 & 27.3 & 18.5 & 3.00 & 219 \\
+Hybrid top-2 & 13.9 & 18.5 & 22.0 & 16.9 & 28.6 & 27.6 & 12.2 & 2.00 & 199 \\
+Hybrid top-3 & 14.9 & 19.8 & 22.1 & 18.9 & 37.6 & 36.5 & 21.0 & 3.00 & 297 \\
+Greedy rank-then-hop & 12.9 & 17.4 & 21.2 & 15.7 & 30.5 & 31.4 & 31.4 & 2.00 & 184 \\
+\midrule
+\multicolumn{10}{@{}l}{\textit{Learned selectors}} \\
+Behaviour cloning [5] & 14.1\,{\scriptsize$\pm$0.3} & 19.0\,{\scriptsize$\pm$0.3} & 21.0 & 18.4 & 36.4 & 37.4 & 37.4 & 1.78 & 163 \\
+GRPO, warm-started [5] & 11.5\,{\scriptsize$\pm$0.3} & 16.1\,{\scriptsize$\pm$0.5} & 21.9 & 12.9 & 25.8 & 26.2 & 26.2 & 1.33 & 92 \\
+PPO + GAE, warm-started [5] & 14.1\,{\scriptsize$\pm$0.3} & 18.9\,{\scriptsize$\pm$0.4} & 21.4 & 18.1 & 35.4 & 36.3 & 36.3 & 1.70 & 152 \\
+REINFORCE, warm-started [5] & 15.0\,{\scriptsize$\pm$0.5} & 20.0\,{\scriptsize$\pm$0.5} & 21.5 & 19.9 & 37.2 & 38.3 & 38.2 & 1.82 & 169 \\
+\textbf{PPO + GAE from scratch [3]} & \textbf{23.3\,{\scriptsize$\pm$0.2}} & \textbf{28.8\,{\scriptsize$\pm$0.3}} & 35.7 & 25.2 & 50.3 & 49.9 & 33.8 & 2.63 & 331 \\
+\midrule
+\multicolumn{10}{@{}l}{\textit{Upper bound}} \\
+Oracle gold path & 48.4 & 55.7 & 78.6 & 42.9 & 96.9 & 100.0 & 100.0 & 1.58 & 135 \\
+\bottomrule
+\end{tabular}
+\end{table}

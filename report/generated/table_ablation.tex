@@ -1,0 +1,26 @@
+\begin{table}[t]
+\centering
+\footnotesize
+\caption{Ablations of the warm-started PPO configuration on the dev set (seeds 0--2 for every row, including the main configuration). Best it.: validation-selected iteration per seed. Path: a traced gold path is covered. R/L: exact match although no traced answer location is selected.}
+\label{tab:ablation}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}llcccccc@{}}
+\toprule
+Factor & Setting & EM & F1 & Path & R/L & Items & Best it. \\
+\midrule
+Reward form & no evidence term & 14.1\,{\scriptsize$\pm$0.2} & 19.2\,{\scriptsize$\pm$0.1} & 36.7 & 0.1 & 1.73 & 5, 15, 25 \\
+ & shaping, $\kappa=0.5$ (main) & 14.1\,{\scriptsize$\pm$0.4} & 19.0\,{\scriptsize$\pm$0.4} & 36.8 & 0.1 & 1.75 & 5, 10, 30 \\
+ & terminal bonus, $\lambda_{\mathrm{ev}}=0.3$ & 14.2\,{\scriptsize$\pm$0.0} & 19.2\,{\scriptsize$\pm$0.1} & 37.4 & 0.1 & 1.75 & 15, 40, 20 \\
+ & shaping, EM instead of F1 & 14.0\,{\scriptsize$\pm$0.3} & 19.0\,{\scriptsize$\pm$0.4} & 37.2 & 0.1 & 1.77 & 5, 20, 10 \\
+\midrule
+GAE $\lambda$ & $\lambda=0$ & 13.8\,{\scriptsize$\pm$0.4} & 18.8\,{\scriptsize$\pm$0.5} & 36.1 & 0.1 & 1.71 & 5, 35, 15 \\
+ & $\lambda=0.95$ (main) & 14.1\,{\scriptsize$\pm$0.4} & 19.0\,{\scriptsize$\pm$0.4} & 36.8 & 0.1 & 1.75 & 5, 10, 30 \\
+ & $\lambda=1$ & 14.5\,{\scriptsize$\pm$0.1} & 19.5\,{\scriptsize$\pm$0.2} & 37.9 & 0.1 & 1.77 & 10, 20, 20 \\
+\midrule
+Entity cost $c$ & $c=0$ & 14.5\,{\scriptsize$\pm$0.3} & 19.6\,{\scriptsize$\pm$0.4} & 38.3 & 0.1 & 1.81 & 10, 20, 25 \\
+ & $c=0.02$ (main) & 14.1\,{\scriptsize$\pm$0.4} & 19.0\,{\scriptsize$\pm$0.4} & 36.8 & 0.1 & 1.75 & 5, 10, 30 \\
+ & $c=0.05$ & 14.1\,{\scriptsize$\pm$0.3} & 19.0\,{\scriptsize$\pm$0.4} & 36.5 & 0.1 & 1.69 & 15, 10, 20 \\
+ & $c=0.1$ & 14.0\,{\scriptsize$\pm$0.5} & 18.9\,{\scriptsize$\pm$0.6} & 36.4 & 0.1 & 1.74 & 5, 10, 5 \\
+\bottomrule
+\end{tabular}
+\end{table}

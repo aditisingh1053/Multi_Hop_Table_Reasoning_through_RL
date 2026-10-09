@@ -1,0 +1,32 @@
+<section id="progress" data-transition="fade" style="background:#FAF9F5;color:#3D4656;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:28px">
+<p style="font-size:24px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#1C5CAB">4 · Progress so far</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14213D">PPO from scratch beats the best heuristic by 8.0 F1</h2>
+<div style="display:flex;flex-direction:row;gap:56px">
+<div style="width:1080px;display:flex;flex-direction:column;gap:10px">
+<p style="font-size:24px;color:#6B7280">Dev F1 on HybridQA (3,466 questions), same frozen reader for every selector</p>
+<div style="display:flex;flex-direction:row;align-items:center;gap:16px"><p style="width:420px;font-size:24px;text-align:right">Oracle evidence (upper bound)</p><div style="width:557px;height:32px;background:#E3E7EE;border:1px dashed #9AA3AF;border-radius:0 6px 6px 0"></div><p style="font-size:24px;font-weight:600;color:#14213D">55.7</p></div>
+<div style="display:flex;flex-direction:row;align-items:center;gap:16px"><p style="width:420px;font-size:24px;text-align:right;color:#14213D"><b>PPO from scratch (ours)</b></p><div style="width:288px;height:32px;background:#2A78D6;border-radius:0 6px 6px 0"></div><p style="font-size:24px;font-weight:600;color:#14213D">28.8</p></div>
+<div style="display:flex;flex-direction:row;align-items:center;gap:16px"><p style="width:420px;font-size:24px;text-align:right">BM25 top-3 (best heuristic)</p><div style="width:208px;height:32px;background:#9AA3AF;border-radius:0 6px 6px 0"></div><p style="font-size:24px;font-weight:600;color:#14213D">20.8</p></div>
+<div style="display:flex;flex-direction:row;align-items:center;gap:16px"><p style="width:420px;font-size:24px;text-align:right">REINFORCE, warm-started</p><div style="width:200px;height:32px;background:#9AA3AF;border-radius:0 6px 6px 0"></div><p style="font-size:24px;font-weight:600;color:#14213D">20.0</p></div>
+<div style="display:flex;flex-direction:row;align-items:center;gap:16px"><p style="width:420px;font-size:24px;text-align:right">Behaviour cloning</p><div style="width:190px;height:32px;background:#9AA3AF;border-radius:0 6px 6px 0"></div><p style="font-size:24px;font-weight:600;color:#14213D">19.0</p></div>
+<div style="display:flex;flex-direction:row;align-items:center;gap:16px"><p style="width:420px;font-size:24px;text-align:right">PPO, warm-started from BC</p><div style="width:189px;height:32px;background:#9AA3AF;border-radius:0 6px 6px 0"></div><p style="font-size:24px;font-weight:600;color:#14213D">18.9</p></div>
+<div style="display:flex;flex-direction:row;align-items:center;gap:16px"><p style="width:420px;font-size:24px;text-align:right">Greedy rank-then-hop</p><div style="width:174px;height:32px;background:#9AA3AF;border-radius:0 6px 6px 0"></div><p style="font-size:24px;font-weight:600;color:#14213D">17.4</p></div>
+<div style="display:flex;flex-direction:row;align-items:center;gap:16px"><p style="width:420px;font-size:24px;text-align:right">GRPO, warm-started</p><div style="width:161px;height:32px;background:#9AA3AF;border-radius:0 6px 6px 0"></div><p style="font-size:24px;font-weight:600;color:#14213D">16.1</p></div>
+<div style="display:flex;flex-direction:row;align-items:center;gap:16px"><p style="width:420px;font-size:24px;text-align:right">Dense top-2 (TableRAG-style)</p><div style="width:137px;height:32px;background:#9AA3AF;border-radius:0 6px 6px 0"></div><p style="font-size:24px;font-weight:600;color:#14213D">13.7</p></div>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:20px">
+<div style="display:flex;flex-direction:column;gap:4px">
+<p style="font-family:'Source Serif 4', Georgia, serif;font-size:120px;font-weight:600;line-height:1;color:#2A78D6">+8.0</p>
+<p style="font-size:24px;line-height:1.4;color:#6B7280">F1 over the best heuristic<br>95% CI [6.9, 9.1] · p &lt; 0.001</p>
+</div>
+<ul style="font-size:26px;line-height:1.4;color:#3D4656">
+<li>+9.8 F1 over behaviour cloning</li>
+<li>Unseen tables: 28.6 vs 18.8 for BC</li>
+<li>Unseen reader: 30.8 vs 21.1 for BM25</li>
+<li>Warm start traps PPO at BC; GRPO shrinks to ~1 entity in training</li>
+</ul>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#6B7280">Done: survey · MDP · tested code · 47 runs in 1.2 h on one T4 · 65-page report · 4 / 5</p>
+<aside>Performance. Every selector here feeds the same frozen reader on all 3,466 HybridQA dev questions. If the reader is handed the correct evidence it reaches 55.7 F1, so most of the loss comes from selection. The best fixed heuristic, BM25 top-3, reaches 20.8; the HYBRIDER-style greedy rule 17.4; TableRAG-style dense retrieval 13.7. Our PPO policy trained from scratch reaches 28.8 F1, plus or minus 0.3 over three seeds: 8.0 points above the best heuristic with a 95% confidence interval of 6.9 to 9.1, and 9.8 points above imitating the annotated evidence. Every PPO run beats every run of every other method. The gain holds on tables never seen in training, 28.6 against 18.8 for behaviour cloning, and with a second reader the policy never trained with, 30.8 against 21.1 for BM25 top-3. The policy wins by learning a different strategy: it often skips the row and collects two or three passages, so the answer is in its evidence for 50% of questions against 36% for behaviour cloning, using about as many words as top-3 retrieval. Two negative results matter just as much: starting PPO from the behaviour-cloned policy left it exactly where cloning put it, and GRPO collapsed to stopping after one entity, most likely because its group normalisation amplifies the small per-entity cost. Done so far: the survey, the MDP formulation, unit-tested code, 47 training runs that take 1.2 hours on one T4 GPU, and the report.</aside>
+</section>
