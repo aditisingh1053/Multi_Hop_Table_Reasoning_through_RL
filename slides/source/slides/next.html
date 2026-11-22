@@ -1,28 +1,26 @@
-<section id="next" data-transition="fade" style="background:#EEF1F6;color:#3D4656;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
-<p style="font-size:24px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#1C5CAB">5 · Next steps &amp; challenges</p>
-<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14213D">Untangle the warm start, then plug in LLM readers</h2>
+<section id="next" data-transition="fade" style="background:#FAF9F5;color:#3D4656;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:24px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#1C5CAB">8 · Takeaways &amp; next steps</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14213D">Multi-hop selection works when the reader is inside the loop</h2>
 <div style="display:flex;flex-direction:row;gap:48px">
 <div style="flex:3;display:flex;flex-direction:column;gap:14px">
-<h3 style="font-size:30px;font-weight:600;color:#14213D">Plan to the final submission</h3>
-<ol style="font-size:26px;line-height:1.45">
-<li>Warm start vs step size: cloned or random start × actor LR 1e-4 or 3e-4</li>
-<li>Repeat the reward, GAE and entity-cost ablations from scratch, 5 seeds each</li>
-<li>Fix GRPO (no std normalisation, as in Dr. GRPO); REINFORCE from scratch</li>
-<li>Scale up: full training set, more iterations, horizon 4, cell-level nodes</li>
-<li>Drop the selector into ODYSSEY-style graphs and Chain-of-Table with an LLM reader</li>
-<li>Stretch: multi-table joins on MMQA with a SQL-execution reward</li>
-</ol>
-</div>
-<div style="flex:2;background:#FAF9F5;border-radius:16px;padding:36px;display:flex;flex-direction:column;gap:14px">
-<h3 style="font-size:30px;font-weight:600;color:#14213D">Challenges and blockers</h3>
+<h3 style="font-size:30px;font-weight:600;color:#14213D">Takeaways</h3>
 <ul style="font-size:26px;line-height:1.45">
-<li>Compute: the laptop CPU throttles; GPU quota needed (full suite 1.2 h on a T4)</li>
-<li>LLM readers cost money or a larger GPU; answers must be cached</li>
-<li>Gold evidence is traced by string match: about 15% wrong</li>
-<li>MMQA's official data link has expired; the mirror has no licence</li>
+<li>Plain PPO saturates at ~28 F1: it selects blind and aggregates by max-confidence</li>
+<li>Bridge feedback + learned COMMIT: 37.5 F1 (+9.5), holds on unseen tables and readers</li>
+<li>Action dropout and RLOO help; self-imitation and privileged critics hurt</li>
+<li>Vanilla GRPO collapses on sparse multi-hop rewards; Dr. GRPO / RLOO fix it</li>
 </ul>
 </div>
+<div style="flex:2;background:#FFFFFF;border-radius:16px;padding:36px;display:flex;flex-direction:column;gap:14px">
+<h3 style="font-size:30px;font-weight:600;color:#14213D">Next</h3>
+<ol style="font-size:26px;line-height:1.45">
+<li>RiL-PPO + action dropout, 100+ iterations, 5 seeds</li>
+<li>Horizon 4 and cell-level nodes</li>
+<li>LLM reader in the loop (Chain-of-Table style)</li>
+<li>Stretch: multi-table joins on MMQA</li>
+</ol>
 </div>
-<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#6B7280">Full plan, risk register and limitations: report, Chapters 7, 10 and 11 · 5 / 5</p>
-<aside>Next steps, in priority order. First, separate the two things that changed between our best and worst PPO runs: the starting point and the learning rate, with a two-by-two experiment, and try remedies for the cloned start such as stopping behaviour cloning early. Second, repeat the reward and GAE ablations from scratch, because in the warm-started regime nothing moved, so they could not answer the question about shaping versus a terminal bonus. Third, fix GRPO by removing the standard-deviation normalisation, and run REINFORCE from scratch to complete the optimiser comparison. Fourth, scale up: the full training set, longer training since the curve had not flattened, a horizon of four, and cell-level nodes. Fifth, the integration claim: put the trained selector into an ODYSSEY-style hybrid graph and in front of Chain-of-Table with an LLM reader. Multi-table joins on MMQA are a stretch goal. The main blockers are compute, the cost of LLM readers, noisy gold evidence, and the MMQA data situation.</aside>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#6B7280">Full results, significance tests and limitations: report and results/loop/REPORT.md · 8 / 8</p>
+<aside>To conclude. Plain PPO entity selection plateaus around 28 F1 because it chooses each hop without seeing what the reader found, and leaves the final answer to the reader's maximum confidence. Putting the reader inside the loop, with bridge feedback in the state and a learned COMMIT action, reaches 37.5 F1 with the same training budget, a gain of 9.5 points that holds on unseen tables and with an unseen reader. From the literature, action dropout and the critic-free RLOO help, while self-imitation and a privileged critic hurt, and vanilla GRPO collapses under sparse multi-hop rewards unless its standard-deviation normalisation is removed. Next we will train RiL-PPO with action dropout for longer with five seeds, extend to a horizon of four and cell-level nodes, put an LLM reader in the loop, and, as a stretch goal, tackle multi-table joins on MMQA.</aside>
 </section>

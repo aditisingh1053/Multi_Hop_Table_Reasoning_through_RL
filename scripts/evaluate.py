@@ -12,7 +12,7 @@ from common import Tee, load_bank, save_json, RESULTS
 
 from mhtrl.device import DEVICE
 from mhtrl.env import EnvConfig
-from mhtrl.policy import PointerActor
+from mhtrl.policy import make_actor
 from mhtrl.reader import DEFAULT_READER, ReaderCache
 from mhtrl.rl.algos import greedy_eval
 
@@ -44,7 +44,7 @@ def main():
         key = env_cfg.k_passages
         if key not in banks:
             banks[key] = load_bank(args.split, env_cfg.k_passages, args.limit)
-        actor = PointerActor()
+        actor = make_actor(env_cfg)
         actor.load_state_dict(torch.load(run / args.ckpt, map_location="cpu"))
         actor.to(DEVICE)
         t0 = time.time()

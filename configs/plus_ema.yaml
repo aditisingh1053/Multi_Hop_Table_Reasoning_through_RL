@@ -1,0 +1,21 @@
+# RiL-PPO + Polyak/EMA weight averaging (decay 0.9 per iteration)
+name: plus_ema
+env: {horizon: 3, k_passages: 5, max_cands: 48, reader_loop: true, commit: true}
+reward: {answer_metric: f1, step_cost: 0.02, evidence_bonus: 0.0, potential: 0.5, gamma: 1.0}
+rl:
+  algo: ppo
+  iters: 40
+  episodes_per_iter: 1024
+  epochs: 4
+  minibatch: 256
+  clip: 0.2
+  actor_lr: 3.0e-4
+  critic_lr: 1.0e-3
+  ent_coef: 0.01
+  gae_lambda: 0.95
+  target_kl: 0.03
+  critic_warmup: 0
+  group_size: 4
+  eval_every: 5
+  init_actor: ""
+  ema: 0.9

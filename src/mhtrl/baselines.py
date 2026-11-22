@@ -43,6 +43,35 @@ def greedy_hop(p: Prepared) -> List[int]:
     return [r, int(a)]
 
 
+def bridge_hop(p: Prepared, cache: ReaderCache) -> List[int]:
+    """Non-learned reader-in-the-loop rule: read the best row, take the reader's span as a
+    bridge entity and hop to the linked passage titled by (or containing) that span; fall back
+    to the best linked passage. Isolates what the bridge signal gives without learning."""
+    from .env import _contains, _informative   # local import: private helpers
+    from .text import normalize_answer
+    if p.n_rows == 0:
+        return []
+    rows = np.arange(p.n_rows)
+    r = int(rows[np.argmax(p.hybrid[rows])])
+    linked = [a for a in p.adj[r] if p.kind[a] == PASSAGE]
+    if not linked:
+        return [r]
+    cache.ensure([(p.qid, r, p.question, p.text[r])])
+    span = normalize_answer(cache.table[(p.qid, r)][0])
+    if _informative(span):
+        titled = [a for a in linked if p.norm_title[a] and
+                  (span == p.norm_title[a] or _contains(span, p.norm_title[a]) or _contains(p.norm_title[a], span))]
+        hit = titled or [a for a in linked if _contains(span, p.norm_text[a])]
+        if hit:
+            return [r, int(max(hit, key=lambda x: p.hybrid[x]))]
+    return [r, int(max(linked, key=lambda x: p.hybrid[x]))]
+
+
+def read_all(p: Prepared) -> List[int]:
+    """Every entity of the question (no selection; max-confidence over ~49 reads)."""
+    return list(range(p.n))
+
+
 def oracle(p: Prepared, cache: ReaderCache) -> List[int]:
     if not p.gold_paths:
         return []

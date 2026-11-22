@@ -71,7 +71,7 @@ aside { display: none; }
 </ul>
 </div>
 </div>
-<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#6B7280">Example: HybridQA dev question 00153f694413a536 · 1 / 5</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#6B7280">Example: HybridQA dev question 00153f694413a536 · 1 / 8</p>
 <aside>Multi-hop table questions need a chain of evidence: here, find the row whose rank is 2, follow the link from the player cell, and read the middle name in the passage. Each step is a decision about what to read next, and a wrong first step cannot be fixed by a good reader. Every existing pipeline makes this decision with a fixed rule: a greedy classifier in HYBRIDER, embedding similarity in TableRAG, an LLM prompt in Chain-of-Table and Dater, a similarity threshold plus breadth-first search in ODYSSEY, where 14 of 41 analysed errors come from selection. None of them learns the choice from whether the final answer is right, and all of them stop after a fixed number of steps. Our goal is to learn both the next entity and the stopping decision from answer quality, with reinforcement learning.</aside>
 </section>
 <section id="related" data-transition="fade" style="background:#FAF9F5;color:#3D4656;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
@@ -98,7 +98,7 @@ aside { display: none; }
 <p style="font-size:26px;line-height:1.4;color:#14213D">Same frozen-reader idea on tables and hyperlinks, with a pointer policy over an entity graph.</p>
 </div>
 </div>
-<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#6B7280">Survey: 100+ papers checked, 12 ranked, 7 research gaps (report, Ch. 3–4) · 2 / 5</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#6B7280">Survey: 100+ papers checked, 12 ranked, 7 research gaps (report, Ch. 3–4) · 2 / 8</p>
 <aside>Three papers come closest. José et al., BRACIS 2024, is the only RL controller for table-plus-text QA: PPO or DQN chooses between retrieving texts, retrieving tables and answering on OTT-QA, and the best agent scored 19.03 F1, exactly what the fixed "always retrieve text" sequence scores. The authors themselves note that tables were too coarse and suggest splitting them into rows. Learning to Reduce and the region-based Table-R1 do use RL to decide which rows and columns to look at, but they decide once, inside a single table; Learning to Reduce reaches 87% column recall on HybridQA zero-shot. s3 is the cleanest frozen-reader design: a PPO-trained searcher selects documents and decides when to stop, while a frozen generator answers, but only over text. Our project combines the three: entity-level actions on tables and linked passages, a learned stop, a frozen reader, and PPO. The literature search covered more than a hundred candidate papers; the report ranks twelve and derives seven gaps.</aside>
 </section>
 <section id="approach" data-transition="fade" style="background:#FAF9F5;color:#3D4656;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
@@ -124,7 +124,7 @@ aside { display: none; }
 </table>
 </div>
 </div>
-<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#6B7280">Shaping uses Φ = κ·ψ(evidence recall), zero at the terminal state, so it cannot change the optimal policy · 3 / 5</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#6B7280">Shaping uses Φ = κ·ψ(evidence recall), zero at the terminal state, so it cannot change the optimal policy · 3 / 8</p>
 <aside>Data: HybridQA, Wikipedia tables whose cells are hyperlinked to passages. For each question we build a graph with one node per row and one per linked passage, about 49 entities per question. Gold evidence exists only as answer locations traced by string matching, which is noisy and unique for only about 56% of questions, so we treat it as a set of acceptable targets. We train on 5,000 questions, select checkpoints on 1,000 questions from different tables, and test on the full official dev set of 3,466 questions. The MDP: the state is the question, the evidence chosen so far and the last entity, embedded once with a frozen MiniLM encoder plus 22 hand-made features. The actions are any row, the five best-matching passages, passages linked from chosen rows, and STOP. The reward is the frozen reader's F1 on the chosen evidence, minus 0.02 per entity, plus an optional evidence-recall term written as potential-based shaping, which provably leaves the optimal policy unchanged. The policy is a pointer network with a separate critic, trained with PPO and GAE, and we compare it with behaviour cloning, REINFORCE and GRPO under identical rewards.</aside>
 </section>
 <section id="progress" data-transition="fade" style="background:#FAF9F5;color:#3D4656;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:28px">
@@ -156,36 +156,143 @@ aside { display: none; }
 </ul>
 </div>
 </div>
-<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#6B7280">Done: survey · MDP · tested code · 47 runs in 1.2 h on one T4 · 65-page report · 4 / 5</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#6B7280">Done: survey · MDP · tested code · 47 runs in 1.2 h on one T4 · 65-page report · 4 / 8</p>
 <aside>Performance. Every selector here feeds the same frozen reader on all 3,466 HybridQA dev questions. If the reader is handed the correct evidence it reaches 55.7 F1, so most of the loss comes from selection. The best fixed heuristic, BM25 top-3, reaches 20.8; the HYBRIDER-style greedy rule 17.4; TableRAG-style dense retrieval 13.7. Our PPO policy trained from scratch reaches 28.8 F1, plus or minus 0.3 over three seeds: 8.0 points above the best heuristic with a 95% confidence interval of 6.9 to 9.1, and 9.8 points above imitating the annotated evidence. Every PPO run beats every run of every other method. The gain holds on tables never seen in training, 28.6 against 18.8 for behaviour cloning, and with a second reader the policy never trained with, 30.8 against 21.1 for BM25 top-3. The policy wins by learning a different strategy: it often skips the row and collects two or three passages, so the answer is in its evidence for 50% of questions against 36% for behaviour cloning, using about as many words as top-3 retrieval. Two negative results matter just as much: starting PPO from the behaviour-cloned policy left it exactly where cloning put it, and GRPO collapsed to stopping after one entity, most likely because its group normalisation amplifies the small per-entity cost. Done so far: the survey, the MDP formulation, unit-tested code, 47 training runs that take 1.2 hours on one T4 GPU, and the report.</aside>
 </section>
-<section id="next" data-transition="fade" style="background:#EEF1F6;color:#3D4656;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
-<p style="font-size:24px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#1C5CAB">5 · Next steps &amp; challenges</p>
-<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14213D">Untangle the warm start, then plug in LLM readers</h2>
-<div style="display:flex;flex-direction:row;gap:48px">
-<div style="flex:3;display:flex;flex-direction:column;gap:14px">
-<h3 style="font-size:30px;font-weight:600;color:#14213D">Plan to the final submission</h3>
-<ol style="font-size:26px;line-height:1.45">
-<li>Warm start vs step size: cloned or random start × actor LR 1e-4 or 3e-4</li>
-<li>Repeat the reward, GAE and entity-cost ablations from scratch, 5 seeds each</li>
-<li>Fix GRPO (no std normalisation, as in Dr. GRPO); REINFORCE from scratch</li>
-<li>Scale up: full training set, more iterations, horizon 4, cell-level nodes</li>
-<li>Drop the selector into ODYSSEY-style graphs and Chain-of-Table with an LLM reader</li>
-<li>Stretch: multi-table joins on MMQA with a SQL-execution reward</li>
-</ol>
+<section id="rilmethod" data-transition="fade" style="background:#EEF1F6;color:#3D4656;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:24px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#1C5CAB">5 · New method: Reader-in-the-Loop PPO</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14213D">Let the policy see what the reader found, and choose the final answer</h2>
+<div style="display:flex;flex-direction:row;gap:40px">
+<div style="flex:1;background:#FAF9F5;border-radius:16px;padding:36px;display:flex;flex-direction:column;gap:14px">
+<p style="font-size:22px;font-weight:600;color:#6B7280">DIAGNOSIS</p>
+<h3 style="font-size:30px;font-weight:600;color:#14213D">Two leaks in plain PPO</h3>
+<ul style="font-size:25px;line-height:1.45">
+<li>Hop 2 is chosen blind: the policy never sees the span hop 1 produced, so it cannot follow a bridge entity</li>
+<li>Max-confidence aggregation: the best span in the selected set gives 38.7 F1, the reader's pick only 27.6</li>
+</ul>
 </div>
-<div style="flex:2;background:#FAF9F5;border-radius:16px;padding:36px;display:flex;flex-direction:column;gap:14px">
-<h3 style="font-size:30px;font-weight:600;color:#14213D">Challenges and blockers</h3>
-<ul style="font-size:26px;line-height:1.45">
-<li>Compute: the laptop CPU throttles; GPU quota needed (full suite 1.2 h on a T4)</li>
-<li>LLM readers cost money or a larger GPU; answers must be cached</li>
-<li>Gold evidence is traced by string match: about 15% wrong</li>
-<li>MMQA's official data link has expired; the mirror has no licence</li>
+<div style="flex:1;background:#FFFFFF;border-radius:16px;padding:36px;display:flex;flex-direction:column;gap:14px">
+<p style="font-size:22px;font-weight:600;color:#2A78D6">FIX 1 · BRIDGE FEEDBACK</p>
+<h3 style="font-size:30px;font-weight:600;color:#14213D">Reader output enters the state</h3>
+<ul style="font-size:25px;line-height:1.45">
+<li>After every hop the frozen reader is queried</li>
+<li>11 candidate features: does the bridge span appear in this row, title or passage; confidence; overlap with the question</li>
+</ul>
+</div>
+<div style="flex:1;background:#FFFFFF;border-radius:16px;padding:36px;display:flex;flex-direction:column;gap:14px">
+<p style="font-size:22px;font-weight:600;color:#2A78D6">FIX 2 · LEARNED COMMIT</p>
+<h3 style="font-size:30px;font-weight:600;color:#14213D">One extra action after STOP</h3>
+<ul style="font-size:25px;line-height:1.45">
+<li>Picks which selected entity's answer is final</li>
+<li>Logit = learned head + 5 × reader score, so at initialisation it equals max-confidence</li>
+<li>Shaping generalised so it still telescopes</li>
 </ul>
 </div>
 </div>
-<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#6B7280">Full plan, risk register and limitations: report, Chapters 7, 10 and 11 · 5 / 5</p>
-<aside>Next steps, in priority order. First, separate the two things that changed between our best and worst PPO runs: the starting point and the learning rate, with a two-by-two experiment, and try remedies for the cloned start such as stopping behaviour cloning early. Second, repeat the reward and GAE ablations from scratch, because in the warm-started regime nothing moved, so they could not answer the question about shaping versus a terminal bonus. Third, fix GRPO by removing the standard-deviation normalisation, and run REINFORCE from scratch to complete the optimiser comparison. Fourth, scale up: the full training set, longer training since the curve had not flattened, a horizon of four, and cell-level nodes. Fifth, the integration claim: put the trained selector into an ODYSSEY-style hybrid graph and in front of Chain-of-Table with an LLM reader. Multi-table joins on MMQA are a stretch goal. The main blockers are compute, the cost of LLM readers, noisy gold evidence, and the MMQA data situation.</aside>
+<p style="font-size:24px;line-height:1.4;color:#6B7280">Also tested from the literature: Rao-Blackwellised COMMIT gradient, privileged critic, self-imitation, action dropout, EMA weights, RLOO / Dr. GRPO, test-time self-consistency</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#6B7280">Code: src/mhtrl/env.py (reader_loop, commit flags) · 17 unit tests · full suite ~4 h on an RTX 3050 laptop GPU · 5 / 8</p>
+<aside>Our extension, reader-in-the-loop PPO. Diagnosing the PPO policy showed two leaks. First, it picks the second hop without knowing what the reader extracted from the first, so it cannot follow a bridge entity, which is the essence of multi-hop reasoning. Second, the final answer is chosen by the reader's maximum confidence across the selected entities: picking the best span in the selected set would give 38.7 F1, but max-confidence gives only 27.6, so about 11 points are lost purely at aggregation. Fix one, bridge feedback: after every hop we run the frozen reader and put its span into the observation, as features telling the policy whether the span appears in a candidate's text, title or row. Fix two, a learned COMMIT action: after STOP the policy chooses which of its selected entities supplies the answer. Its logit has a residual prior equal to five times the reader score, so an untrained head reproduces max-confidence and RL only learns the corrections. We generalised the potential-based shaping so it still telescopes with the extra step. We also implemented a set of ideas from the literature and tested each one: an exact Rao-Blackwellised gradient for the commit choice, an asymmetric privileged critic, self-imitation learning, action dropout, EMA weights, the critic-free optimisers RLOO and Dr. GRPO, and test-time self-consistency.</aside>
+</section>
+<section id="rilresults" data-transition="fade" style="background:#FAF9F5;color:#3D4656;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:28px">
+<p style="font-size:24px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#1C5CAB">6 · RiL-PPO results</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14213D">Reader in the loop: 37.5 F1, +9.5 over PPO with the same budget</h2>
+<div style="display:flex;flex-direction:row;gap:56px">
+<div style="width:1080px;display:flex;flex-direction:column;gap:10px">
+<p style="font-size:24px;color:#6B7280">Dev F1 on HybridQA (3,466 questions), frozen MiniLM reader, mean of 3 seeds</p>
+<div style="display:flex;flex-direction:row;align-items:center;gap:16px"><p style="width:420px;font-size:24px;text-align:right">Oracle evidence (upper bound)</p><div style="width:556px;height:32px;background:#E3E7EE;border:1px dashed #9AA3AF;border-radius:0 6px 6px 0"></div><p style="font-size:24px;font-weight:600;color:#14213D">55.6</p></div>
+<div style="display:flex;flex-direction:row;align-items:center;gap:16px"><p style="width:420px;font-size:24px;text-align:right;color:#14213D"><b>RiL-PPO, 100 iterations</b></p><div style="width:375px;height:32px;background:#2A78D6;border-radius:0 6px 6px 0"></div><p style="font-size:24px;font-weight:600;color:#14213D">37.5</p></div>
+<div style="display:flex;flex-direction:row;align-items:center;gap:16px"><p style="width:420px;font-size:24px;text-align:right;color:#14213D"><b>RiL-PPO, 40 iterations</b></p><div style="width:299px;height:32px;background:#7FB0EA;border-radius:0 6px 6px 0"></div><p style="font-size:24px;font-weight:600;color:#14213D">29.9</p></div>
+<div style="display:flex;flex-direction:row;align-items:center;gap:16px"><p style="width:420px;font-size:24px;text-align:right">PPO, 100 iterations</p><div style="width:280px;height:32px;background:#9AA3AF;border-radius:0 6px 6px 0"></div><p style="font-size:24px;font-weight:600;color:#14213D">28.0</p></div>
+<div style="display:flex;flex-direction:row;align-items:center;gap:16px"><p style="width:420px;font-size:24px;text-align:right">PPO, 40 iterations</p><div style="width:276px;height:32px;background:#9AA3AF;border-radius:0 6px 6px 0"></div><p style="font-size:24px;font-weight:600;color:#14213D">27.6</p></div>
+<div style="display:flex;flex-direction:row;align-items:center;gap:16px"><p style="width:420px;font-size:24px;text-align:right">Read all ~49 entities</p><div style="width:215px;height:32px;background:#9AA3AF;border-radius:0 6px 6px 0"></div><p style="font-size:24px;font-weight:600;color:#14213D">21.5</p></div>
+<div style="display:flex;flex-direction:row;align-items:center;gap:16px"><p style="width:420px;font-size:24px;text-align:right">BM25 top-3 (best heuristic)</p><div style="width:208px;height:32px;background:#9AA3AF;border-radius:0 6px 6px 0"></div><p style="font-size:24px;font-weight:600;color:#14213D">20.8</p></div>
+<div style="display:flex;flex-direction:row;align-items:center;gap:16px"><p style="width:420px;font-size:24px;text-align:right">Bridge hop (hand-written rule)</p><div style="width:190px;height:32px;background:#9AA3AF;border-radius:0 6px 6px 0"></div><p style="font-size:24px;font-weight:600;color:#14213D">19.0</p></div>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:20px">
+<div style="display:flex;flex-direction:column;gap:4px">
+<p style="font-family:'Source Serif 4', Georgia, serif;font-size:120px;font-weight:600;line-height:1;color:#2A78D6">+9.5</p>
+<p style="font-size:24px;line-height:1.4;color:#6B7280">F1 over PPO, 100 iterations each<br>95% CI [8.6, 10.6] · p &lt; 0.001</p>
+</div>
+<ul style="font-size:26px;line-height:1.4;color:#3D4656">
+<li>Answer in evidence: 57% vs 45%</li>
+<li>COMMIT adds +8.0 F1 over max-conf, changes 34% of answers</li>
+<li>Unseen tables: 37.4 vs 27.8</li>
+<li>Unseen reader (RoBERTa): 32.0 vs 28.5</li>
+<li>PPO plateaus after 40 iterations; RiL-PPO keeps learning</li>
+</ul>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#6B7280">EM 31.0 vs 22.8 · every RiL-PPO seed beats every PPO seed · full tables: results/loop/REPORT.md · 6 / 8</p>
+<aside>Results of reader-in-the-loop PPO, on all 3,466 dev questions with three seeds. Trained for 100 iterations it reaches 37.5 F1 and 31.0 EM, against 28.0 F1 for plain PPO with exactly the same budget: a gain of 9.5 points, 95% confidence interval 8.6 to 10.6, and every RiL-PPO seed beats every PPO seed. That is 16.7 points above BM25 and about two thirds of the oracle. The key dynamic: plain PPO saturates, going only from 27.6 to 28.0 between 40 and 100 iterations, while RiL-PPO keeps improving, from 29.9 to 37.5, because the reader's feedback gives it something new to learn from. The diagnostics show both mechanisms at work: the answer is in the selected evidence 57 percent of the time instead of 45, which is the bridge feedback, and the learned COMMIT adds 8 F1 over max-confidence, overriding it on a third of the questions. The gain transfers to tables never seen in training, 37.4 versus 27.8, and to a different reader, RoBERTa, swapped in without retraining, 32.0 versus 28.5 on the first thousand questions. Note that the hand-written bridge rule only gets 19.0, so the gain comes from learning, not from the idea of hopping alone.</aside>
+</section>
+<section id="rilablation" data-transition="fade" style="background:#EEF1F6;color:#3D4656;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:24px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#1C5CAB">7 · What helped and what did not</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14213D">Both RiL parts matter; most literature tricks do not stack</h2>
+<div style="display:flex;flex-direction:row;gap:40px">
+<div style="flex:1;background:#FFFFFF;border-radius:16px;padding:36px;display:flex;flex-direction:column;gap:12px">
+<h3 style="font-size:30px;font-weight:600;color:#14213D">Ablation (40 iterations)</h3>
+<table style="font-size:24px">
+<tr><th>Variant</th><th>F1</th><th>Δ</th></tr>
+<tr><td>PPO</td><td>27.6</td><td>–</td></tr>
+<tr><td>+ bridge feedback</td><td>28.7</td><td>+1.1</td></tr>
+<tr><td>+ COMMIT</td><td>29.0</td><td>+1.4</td></tr>
+<tr><td><b>+ both (RiL-PPO)</b></td><td><b>29.9</b></td><td><b>+2.3</b></td></tr>
+</table>
+<p style="font-size:22px;color:#6B7280">All p ≤ 0.008, paired bootstrap</p>
+</div>
+<div style="flex:1;background:#FFFFFF;border-radius:16px;padding:36px;display:flex;flex-direction:column;gap:12px">
+<h3 style="font-size:30px;font-weight:600;color:#14213D">Extensions on RiL-PPO</h3>
+<table style="font-size:24px">
+<tr><th>Added</th><th>F1</th></tr>
+<tr><td style="color:#1C7A4A"><b>Action dropout</b></td><td style="color:#1C7A4A"><b>31.1</b></td></tr>
+<tr><td>Rao-Blackwell COMMIT</td><td>30.1</td></tr>
+<tr><td>EMA weights</td><td>29.9</td></tr>
+<tr><td style="color:#B3261E">Privileged critic</td><td style="color:#B3261E">26.6</td></tr>
+<tr><td style="color:#B3261E">Self-imitation</td><td style="color:#B3261E">26.5</td></tr>
+<tr><td>All combined</td><td>28.5</td></tr>
+</table>
+</div>
+<div style="flex:1;background:#FFFFFF;border-radius:16px;padding:36px;display:flex;flex-direction:column;gap:12px">
+<h3 style="font-size:30px;font-weight:600;color:#14213D">Optimisers (RiL env)</h3>
+<table style="font-size:24px">
+<tr><th>Method</th><th>F1</th></tr>
+<tr><td>PPO + GAE</td><td>29.9</td></tr>
+<tr><td><b>RLOO, no critic</b></td><td><b>30.2</b></td></tr>
+<tr><td>Dr. GRPO</td><td>28.4</td></tr>
+<tr><td style="color:#B3261E">GRPO</td><td style="color:#B3261E">17.7</td></tr>
+</table>
+<p style="font-size:22px;line-height:1.4;color:#6B7280">GRPO collapses to 1 entity (std-norm on sparse rewards); dropping it fixes it</p>
+</div>
+</div>
+<p style="font-size:24px;line-height:1.4;color:#6B7280">Self-consistency over 8 sampled paths: ±0.2 F1, not worth ~2× reader cost</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#6B7280">Mean of 3 seeds on 3,466 dev questions · 7 / 8</p>
+<aside>What helped and what did not. Left: the ablation. Bridge feedback alone adds 1.1, the learned COMMIT alone 1.4, and together 2.3 at 40 iterations, each significant, so both parts contribute and they roughly add up. Middle: the extensions from the literature, each added on top of RiL-PPO. Action dropout, from multi-hop knowledge-graph RL, is the only clear win at 31.1. The Rao-Blackwellised commit gradient is neutral on F1 but puts the answer in the evidence more often. EMA never got selected, so it is identical. The privileged critic and self-imitation both hurt by over three points: the privileged critic fits values better but the policy gets worse, and self-imitation replays early lucky episodes. Stacking everything is therefore worse than plain RiL-PPO, an honest negative result. Right: optimisers. RLOO matches PPO with GAE with no critic at all. Vanilla GRPO collapses to selecting one entity because its per-group standard-deviation normalisation amplifies noise under sparse rewards; Dr. GRPO, which removes it, recovers more than ten points. Finally, test-time self-consistency changed F1 by at most 0.2, so it is not worth the extra reader calls.</aside>
+</section>
+<section id="next" data-transition="fade" style="background:#FAF9F5;color:#3D4656;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:24px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#1C5CAB">8 · Takeaways &amp; next steps</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14213D">Multi-hop selection works when the reader is inside the loop</h2>
+<div style="display:flex;flex-direction:row;gap:48px">
+<div style="flex:3;display:flex;flex-direction:column;gap:14px">
+<h3 style="font-size:30px;font-weight:600;color:#14213D">Takeaways</h3>
+<ul style="font-size:26px;line-height:1.45">
+<li>Plain PPO saturates at ~28 F1: it selects blind and aggregates by max-confidence</li>
+<li>Bridge feedback + learned COMMIT: 37.5 F1 (+9.5), holds on unseen tables and readers</li>
+<li>Action dropout and RLOO help; self-imitation and privileged critics hurt</li>
+<li>Vanilla GRPO collapses on sparse multi-hop rewards; Dr. GRPO / RLOO fix it</li>
+</ul>
+</div>
+<div style="flex:2;background:#FFFFFF;border-radius:16px;padding:36px;display:flex;flex-direction:column;gap:14px">
+<h3 style="font-size:30px;font-weight:600;color:#14213D">Next</h3>
+<ol style="font-size:26px;line-height:1.45">
+<li>RiL-PPO + action dropout, 100+ iterations, 5 seeds</li>
+<li>Horizon 4 and cell-level nodes</li>
+<li>LLM reader in the loop (Chain-of-Table style)</li>
+<li>Stretch: multi-table joins on MMQA</li>
+</ol>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#6B7280">Full results, significance tests and limitations: report and results/loop/REPORT.md · 8 / 8</p>
+<aside>To conclude. Plain PPO entity selection plateaus around 28 F1 because it chooses each hop without seeing what the reader found, and leaves the final answer to the reader's maximum confidence. Putting the reader inside the loop, with bridge feedback in the state and a learned COMMIT action, reaches 37.5 F1 with the same training budget, a gain of 9.5 points that holds on unseen tables and with an unseen reader. From the literature, action dropout and the critic-free RLOO help, while self-imitation and a privileged critic hurt, and vanilla GRPO collapses under sparse multi-hop rewards unless its standard-deviation normalisation is removed. Next we will train RiL-PPO with action dropout for longer with five seeds, extend to a horizon of four and cell-level nodes, put an LLM reader in the loop, and, as a stretch goal, tackle multi-table joins on MMQA.</aside>
 </section>
 </body>
 </html>

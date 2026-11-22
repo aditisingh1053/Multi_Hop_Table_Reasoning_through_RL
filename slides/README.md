@@ -1,6 +1,6 @@
 # Presentation slides
 
-Six slides (title + Problem & Motivation, Related Work, Dataset & Approach, Progress So Far, Next Steps & Challenges).
+Nine slides (title + Problem & Motivation, Related Work, Dataset & Approach, Progress So Far, RiL-PPO Method, RiL-PPO Results, Ablations, Takeaways & Next Steps).
 
 | File | Use |
 |---|---|

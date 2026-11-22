@@ -37,6 +37,6 @@
 </ul>
 </div>
 </div>
-<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#6B7280">Example: HybridQA dev question 00153f694413a536 · 1 / 5</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#6B7280">Example: HybridQA dev question 00153f694413a536 · 1 / 8</p>
 <aside>Multi-hop table questions need a chain of evidence: here, find the row whose rank is 2, follow the link from the player cell, and read the middle name in the passage. Each step is a decision about what to read next, and a wrong first step cannot be fixed by a good reader. Every existing pipeline makes this decision with a fixed rule: a greedy classifier in HYBRIDER, embedding similarity in TableRAG, an LLM prompt in Chain-of-Table and Dater, a similarity threshold plus breadth-first search in ODYSSEY, where 14 of 41 analysed errors come from selection. None of them learns the choice from whether the final answer is right, and all of them stop after a fixed number of steps. Our goal is to learn both the next entity and the stopping decision from answer quality, with reinforcement learning.</aside>
 </section>

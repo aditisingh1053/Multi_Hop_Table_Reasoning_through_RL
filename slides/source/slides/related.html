@@ -22,6 +22,6 @@
 <p style="font-size:26px;line-height:1.4;color:#14213D">Same frozen-reader idea on tables and hyperlinks, with a pointer policy over an entity graph.</p>
 </div>
 </div>
-<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#6B7280">Survey: 100+ papers checked, 12 ranked, 7 research gaps (report, Ch. 3–4) · 2 / 5</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#6B7280">Survey: 100+ papers checked, 12 ranked, 7 research gaps (report, Ch. 3–4) · 2 / 8</p>
 <aside>Three papers come closest. José et al., BRACIS 2024, is the only RL controller for table-plus-text QA: PPO or DQN chooses between retrieving texts, retrieving tables and answering on OTT-QA, and the best agent scored 19.03 F1, exactly what the fixed "always retrieve text" sequence scores. The authors themselves note that tables were too coarse and suggest splitting them into rows. Learning to Reduce and the region-based Table-R1 do use RL to decide which rows and columns to look at, but they decide once, inside a single table; Learning to Reduce reaches 87% column recall on HybridQA zero-shot. s3 is the cleanest frozen-reader design: a PPO-trained searcher selects documents and decides when to stop, while a frozen generator answers, but only over text. Our project combines the three: entity-level actions on tables and linked passages, a learned stop, a frozen reader, and PPO. The literature search covered more than a hundred candidate papers; the report ranks twelve and derives seven gaps.</aside>
 </section>

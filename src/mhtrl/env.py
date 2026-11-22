@@ -7,20 +7,47 @@ Actions A_t = C_t U {STOP}, where the candidate set C_t contains
           * every passage hyperlinked from an already selected row (graph expansion).
           STOP is unavailable at t = 0 (the reader needs at least one entity).
 Episode ends on STOP or after H selections (forced stop).
+
+Reader-in-the-loop extension (EnvConfig.reader_loop / EnvConfig.commit, both off by default, so
+the original environment is unchanged):
+  * reader_loop: after every hop the frozen reader's span for each selected entity (an
+    intermediate "bridge" answer) is part of the observation. Candidates get bridge features
+    (contains a bridge span; is the passage titled by a bridge span), the state gets reader
+    confidences and the question type. Hop t+1 is conditioned on what hop t actually found.
+  * commit: after selection ends, one extra COMMIT step chooses which selected entity's span
+    is the final answer, replacing the fixed max-confidence aggregation. Its logit has a
+    residual prior equal to the reader score, so the untrained head *is* max-confidence.
+Neither costs extra reader calls: only selected entities are read, exactly as for the reward.
 """
+import math
 import pickle
+import re
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Sequence
+from functools import cached_property
+from typing import Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 
 from .data import PASSAGE, ROW
-from .text import contains_answer, content_words, numbers, words
+from .text import STOPWORDS, contains_answer, content_words, normalize_answer, numbers, words
 
 EMB_DIM = 384
 N_CAND_FEAT = 14
 N_STATE_SCALAR = 8
 STATE_DIM = 3 * EMB_DIM + N_STATE_SCALAR
+
+# reader-in-the-loop blocks, appended after the original features / scalars
+LOOP_CAND_FEATURES = [
+    "bridge_in_text", "bridge_is_title", "last_bridge_in_text", "bridge_in_row",   # select phase
+    "commit_conf", "commit_score", "commit_is_maxconf", "commit_span_in_q",          # commit phase
+    "commit_agreement", "commit_span_numeric", "commit_span_len",
+]
+LOOP_STATE_SCALARS = ["max_conf", "last_conf", "last_span_informative",
+                      "q_who", "q_when", "q_number", "q_where", "q_other", "commit_phase"]
+N_LOOP_CAND = len(LOOP_CAND_FEATURES)
+N_LOOP_STATE = len(LOOP_STATE_SCALARS)
+LOOP_SCORE_IDX = N_CAND_FEAT + LOOP_CAND_FEATURES.index("commit_score")
+SCORE_SCALE = 5.0   # commit_score = clip(reader score, -20, 20) / SCORE_SCALE
 
 CAND_FEATURES = [
     "is_row", "is_passage", "cos(q,a)", "bm25_norm", "rank_in_type", "linked_to_evidence",
@@ -36,6 +63,47 @@ class EnvConfig:
     horizon: int = 3
     k_passages: int = 5
     max_cands: int = 48
+    reader_loop: bool = False   # reader feedback (bridge spans, confidences) in the observation
+    commit: bool = False        # learned COMMIT step choosing the answer-bearing entity
+
+
+def uses_loop(cfg: EnvConfig) -> bool:
+    return bool(cfg.reader_loop or cfg.commit)
+
+
+def dims(cfg: EnvConfig) -> dict:
+    """Network input sizes for an environment configuration."""
+    extra_s, extra_c = (N_LOOP_STATE, N_LOOP_CAND) if uses_loop(cfg) else (0, 0)
+    return {"state_dim": STATE_DIM + extra_s, "cand_dim": EMB_DIM + N_CAND_FEAT + extra_c,
+            "n_scalar": N_STATE_SCALAR + extra_s, "commit": bool(cfg.commit)}
+
+
+def _sigmoid(x: float) -> float:
+    return 1.0 / (1.0 + math.exp(-max(-30.0, min(30.0, x))))
+
+
+def _contains(span: str, norm_text: str) -> bool:
+    return bool(span) and (" " + span + " ") in (" " + norm_text + " ")
+
+
+def _informative(span: str) -> bool:
+    """A span usable as a bridge: non-empty, short, and not only stop words."""
+    toks = span.split()
+    return 0 < len(toks) <= 8 and any(t not in STOPWORDS for t in toks)
+
+
+def question_type(q: str) -> int:
+    """0 who, 1 when/year, 2 number, 3 where, 4 other."""
+    ql = q.lower()
+    if re.search(r"\bhow (many|much|long|old|tall|far|big|large)\b", ql) or "what number" in ql:
+        return 2
+    if re.search(r"\b(when|what year|which year|what date|in what year)\b", ql):
+        return 1
+    if re.search(r"\bwho(m|se)?\b", ql):
+        return 0
+    if re.search(r"\bwhere\b", ql):
+        return 3
+    return 4
 
 
 class Prepared:
@@ -90,6 +158,24 @@ class Prepared:
             if self.answer else np.zeros(self.n, dtype=bool)
         self.word_len = np.array([len(t.split()) for t in self.text], dtype=np.int64)
 
+    # lazily computed, used only by the reader-in-the-loop features
+    @cached_property
+    def norm_text(self) -> List[str]:
+        return [normalize_answer(t) for t in self.text]
+
+    @cached_property
+    def norm_title(self) -> List[str]:
+        return [normalize_answer(t.split(" : ", 1)[0]) if k == PASSAGE else ""
+                for t, k in zip(self.text, self.kind)]
+
+    @cached_property
+    def q_words(self) -> frozenset:
+        return frozenset(normalize_answer(self.question).split())
+
+    @cached_property
+    def q_type(self) -> int:
+        return question_type(self.question)
+
 
 class Bank:
     """All prepared questions of one split plus a global embedding matrix for gathering."""
@@ -139,12 +225,22 @@ class Episode:
         self.selected: List[int] = []
         self.done = False
         self.truncated_cands = 0
+        self.in_commit = False                 # COMMIT phase (cfg.commit only)
+        self.committed: Optional[int] = None   # entity whose span is the final answer
+        self.reader_out: Dict[int, Tuple[str, float]] = {}   # filled by the rollout
 
     @property
     def t(self) -> int:
         return len(self.selected)
 
+    @property
+    def n_commit_steps(self) -> int:
+        """1 if this episode has (or had) a COMMIT decision step."""
+        return int(self.cfg.commit and len(self.selected) > 1)
+
     def candidates(self) -> List[int]:
+        if self.in_commit:
+            return list(self.selected)
         p, sel = self.p, set(self.selected)
         rows = [i for i in range(p.n_rows) if i not in sel]
         psg = set(p.global_top)
@@ -163,10 +259,69 @@ class Episode:
         return cands
 
     def stop_allowed(self) -> bool:
-        return self.t >= 1
+        return self.t >= 1 and not self.in_commit
 
     def features(self, cands: Sequence[int]):
-        """Returns (state vector [STATE_DIM], candidate features [len(cands), N_CAND_FEAT])."""
+        """Returns (state vector, candidate features [len(cands), n_feat]).
+
+        Without the loop extension: [STATE_DIM] and [len(cands), N_CAND_FEAT] exactly as before.
+        With it, N_LOOP_STATE scalars and N_LOOP_CAND features are appended.
+        """
+        s, f = self._base_features(cands)
+        if not uses_loop(self.cfg):
+            return s, f
+        ls, lf = self._loop_features(cands)
+        return np.concatenate([s, ls]), np.concatenate([f, lf], 1)
+
+    def _loop_features(self, cands: Sequence[int]):
+        p, sel, H, ro = self.p, self.selected, self.cfg.horizon, self.reader_out
+        fx = np.zeros((len(cands), N_LOOP_CAND), dtype=np.float32)
+        sx = np.zeros(N_LOOP_STATE, dtype=np.float32)
+        # the policy sees reader outputs while selecting only with reader_loop; always when committing
+        see_reader = self.cfg.reader_loop or self.in_commit
+        if not see_reader:
+            return sx, fx
+        spans = {e: normalize_answer(ro[e][0]) for e in sel if e in ro}
+        scores = {e: ro[e][1] for e in sel if e in ro}
+        if scores:
+            sx[0] = _sigmoid(max(scores.values()) / 4.0)
+            sx[1] = _sigmoid(scores.get(sel[-1], -20.0) / 4.0)
+            sx[2] = float(_informative(spans.get(sel[-1], "")))
+        sx[3 + p.q_type] = 1.0
+        sx[8] = float(self.in_commit)
+
+        if self.in_commit:
+            best = max(scores, key=scores.get) if scores else None
+            for i, e in enumerate(cands):
+                sp, sc = spans.get(e, ""), scores.get(e, -20.0)
+                toks = sp.split()
+                fx[i, 4] = _sigmoid(sc / 4.0)
+                fx[i, 5] = max(-20.0, min(20.0, sc)) / SCORE_SCALE
+                fx[i, 6] = float(e == best)
+                fx[i, 7] = (sum(t in p.q_words for t in toks) / len(toks)) if toks else 1.0
+                fx[i, 8] = sum(_contains(sp, p.norm_text[o]) for o in sel if o != e) / H
+                fx[i, 9] = float(any(ch.isdigit() for ch in sp))
+                fx[i, 10] = min(len(toks), 10) / 10.0
+            return sx, fx
+
+        bridges = [s for s in spans.values() if _informative(s)]
+        last = spans.get(sel[-1], "") if sel else ""
+        last = last if _informative(last) else ""
+        if bridges:
+            for i, a in enumerate(cands):
+                nt = p.norm_text[a]
+                hit = any(_contains(b, nt) for b in bridges)
+                fx[i, 0] = float(hit)
+                if p.kind[a] == PASSAGE:
+                    title = p.norm_title[a]
+                    fx[i, 1] = float(bool(title) and any(
+                        b == title or _contains(b, title) or _contains(title, b) for b in bridges))
+                else:
+                    fx[i, 3] = float(hit)
+                fx[i, 2] = float(_contains(last, nt))
+        return sx, fx
+
+    def _base_features(self, cands: Sequence[int]):
         p, sel, H = self.p, self.selected, self.cfg.horizon
         c = np.asarray(cands, dtype=np.int64)
         f = np.zeros((len(c), N_CAND_FEAT), dtype=np.float32)
@@ -208,16 +363,29 @@ class Episode:
         return s, f
 
     def step(self, node: Optional[int]):
-        """node=None means STOP."""
+        """node=None means STOP. In the COMMIT phase, node is the entity to answer from."""
         assert not self.done
+        if self.in_commit:
+            assert node is not None and node in self.selected
+            self.committed = int(node)
+            self.done = True
+            return
         if node is None:
             assert self.stop_allowed()
-            self.done = True
+            self._end_selection()
         else:
             assert node not in self.selected
             self.selected.append(int(node))
             if self.t >= self.cfg.horizon:
-                self.done = True
+                self._end_selection()
+
+    def _end_selection(self):
+        if self.n_commit_steps:
+            self.in_commit = True          # one more decision: which entity to answer from
+        else:
+            if self.cfg.commit and self.selected:
+                self.committed = self.selected[0]   # a single entity: nothing to choose
+            self.done = True
 
 
 @dataclass
@@ -230,26 +398,30 @@ class RewardConfig:
 
 
 def episode_rewards(p: Prepared, selected: Sequence[int], stopped_explicitly: bool,
-                    answer_score: float, rc: RewardConfig) -> np.ndarray:
+                    answer_score: float, rc: RewardConfig, commit_steps: int = 0) -> np.ndarray:
     """Per-step rewards for one finished episode.
 
-    Steps: one per selection, plus one extra step if the episode ended with an explicit STOP.
-    Terminal states have potential 0, so with gamma = 1 the shaping terms telescope to
+    Steps: one per selection, one if the episode ended with an explicit STOP, and
+    `commit_steps` (0 or 1) for the COMMIT decision. State k has potential Phi(E_min(k, |E|))
+    and the terminal state has potential 0, so with gamma = 1 the shaping terms telescope to
     -Phi(s_0) = 0 and the optimal policy is unchanged (Ng, Harada and Russell, 1999).
     """
-    n_steps = len(selected) + (1 if stopped_explicitly else 0)
+    n_sel = len(selected)
+    n_steps = n_sel + (1 if stopped_explicitly else 0) + commit_steps
     r = np.zeros(n_steps, dtype=np.float32)
     if n_steps == 0:          # degenerate graph without selectable entities
         return r
     phi = [0.0]
-    for i in range(1, len(selected) + 1):
+    for i in range(1, n_sel + 1):
         phi.append(rc.potential * evidence_recall(p, selected[:i]))
-    for i in range(len(selected)):
-        r[i] -= rc.step_cost
-        nxt = phi[i + 1] if (i + 1 < n_steps) else 0.0   # entering the terminal state
-        r[i] += rc.gamma * nxt - phi[i]
-    if stopped_explicitly:
-        r[-1] += rc.gamma * 0.0 - phi[len(selected)]
+
+    def pot(k):               # potential of the state before step k
+        return 0.0 if k >= n_steps else phi[min(k, n_sel)]
+
+    for k in range(n_steps):
+        if k < n_sel:
+            r[k] -= rc.step_cost
+        r[k] += rc.gamma * pot(k + 1) - pot(k)
     terminal = answer_score + rc.evidence_bonus * evidence_recall(p, selected)
     r[-1] += terminal
     return r

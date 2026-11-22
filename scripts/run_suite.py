@@ -23,7 +23,7 @@ from mhtrl.baselines import greedy_hop, oracle, random_walk, topk
 from mhtrl.config import load_config
 from mhtrl.device import DEVICE
 from mhtrl.env import EnvConfig
-from mhtrl.policy import PointerActor
+from mhtrl.policy import make_actor
 from mhtrl.reader import DEFAULT_READER, ReaderCache
 from mhtrl.rl.algos import greedy_eval, train_rl
 from mhtrl.rl.bc import train_bc
@@ -71,7 +71,7 @@ def evaluate_run(run_dir, bank, cache, env_cfg, tag, log, split="test"):
     out = run_dir / f"eval_{split}{tag}.json"
     if out.exists() or not (run_dir / "actor_best.pt").exists():
         return
-    actor = PointerActor()
+    actor = make_actor(env_cfg)
     actor.load_state_dict(torch.load(run_dir / "actor_best.pt", map_location="cpu"))
     actor.to(DEVICE)
     t0 = time.time()

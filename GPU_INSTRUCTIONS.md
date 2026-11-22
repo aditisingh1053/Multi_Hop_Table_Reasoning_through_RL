@@ -46,13 +46,17 @@ says so).
 
    ```python
    # Cell 2: copy the code into the writable working directory
+   # (recursive search: newer Kaggle mounts datasets under /kaggle/input/datasets/<user>/<name>/)
    import glob, shutil, zipfile, os
-   zips = glob.glob('/kaggle/input/*/gpu_bundle.zip')
+   zips = glob.glob('/kaggle/input/**/gpu_bundle.zip', recursive=True)
    if zips:
        zipfile.ZipFile(zips[0]).extractall('/kaggle/working')
    else:   # Kaggle extracted the zip on upload
-       shutil.copytree(glob.glob('/kaggle/input/*/mhtrl')[0], '/kaggle/working/mhtrl', dirs_exist_ok=True)
+       src = [p for p in glob.glob('/kaggle/input/**/mhtrl', recursive=True)
+              if os.path.isdir(os.path.join(p, 'scripts'))][0]
+       shutil.copytree(src, '/kaggle/working/mhtrl', dirs_exist_ok=True)
    os.chdir('/kaggle/working/mhtrl')
+   print('working in', os.getcwd(), '->', sorted(os.listdir('.')))
    !pip install -q pyyaml tqdm
    ```
 
@@ -119,6 +123,42 @@ bash scripts/run_all_gpu.sh 2>&1 | tee run.log
 Copy `results_bundle.zip` back with `scp`.
 
 ---
+
+## Reader-in-the-loop PPO (RiL-PPO) experiments
+
+A separate suite: `scripts/run_loop_gpu.sh`. It does the same data preparation, then runs
+these stages in priority order. All training is from scratch with 3 seeds.
+
+1. **Baselines**: `bm25_k3`, `hybrid_k3`, `greedy_hop`, `bridge_hop`, `read_all`, `oracle`.
+2. **Core**: PPO from scratch (control), RiL-PPO, and its two ablations (40 iterations each).
+3. **RiL-PPO++**: all extensions together, plus each extension alone. The extensions are the
+   Rao-Blackwellised COMMIT, the privileged critic, self-imitation, action dropout and EMA.
+4. **Critic-free optimisers**: RLOO, Dr. GRPO and GRPO.
+5. **Long runs**: 100 iterations for the control, RiL-PPO and RiL-PPO++.
+6. **Self-consistency**: test-time voting over 8 sampled evidence paths.
+7. **Reader transfer**: re-evaluation with RoBERTa.
+
+Results go to `results/loop/`, summarised in `results/loop/REPORT.md`.
+
+Expected time on a T4 is roughly 4–5 h (an estimate; `results/loop/logs/loop_suite.log` has
+the real times). `SEEDS=2 NO_LONG=1` gives a 1.5–2 h version. If a session ends early, run the
+same command again: finished runs are skipped.
+
+1. On the laptop, build the bundle: `python scripts/make_gpu_bundle.py` (writes `gpu_bundle.zip`).
+2. Upload it exactly as in Option A or B above. Replace Cells 3 and 4 with:
+
+   ```python
+   !SMOKE=1 bash scripts/run_loop_gpu.sh          # prints LOOP SMOKE TEST PASSED
+   ```
+
+   ```python
+   !bash scripts/run_loop_gpu.sh 2>&1 | tail -n 150
+   !cat results/loop/REPORT.md
+   !rm -rf data
+   ```
+
+3. Download `mhtrl/loop_results_bundle.zip`. Unzip it in the repository root (it only adds
+   `results/loop/`), then run `python scripts/loop_report.py` to regenerate the report locally.
 
 ## Troubleshooting
 

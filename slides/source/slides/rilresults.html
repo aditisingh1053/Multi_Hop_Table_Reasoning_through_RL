@@ -1,0 +1,32 @@
+<section id="rilresults" data-transition="fade" style="background:#FAF9F5;color:#3D4656;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:28px">
+<p style="font-size:24px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#1C5CAB">6 · RiL-PPO results</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14213D">Reader in the loop: 37.5 F1, +9.5 over PPO with the same budget</h2>
+<div style="display:flex;flex-direction:row;gap:56px">
+<div style="width:1080px;display:flex;flex-direction:column;gap:10px">
+<p style="font-size:24px;color:#6B7280">Dev F1 on HybridQA (3,466 questions), frozen MiniLM reader, mean of 3 seeds</p>
+<div style="display:flex;flex-direction:row;align-items:center;gap:16px"><p style="width:420px;font-size:24px;text-align:right">Oracle evidence (upper bound)</p><div style="width:556px;height:32px;background:#E3E7EE;border:1px dashed #9AA3AF;border-radius:0 6px 6px 0"></div><p style="font-size:24px;font-weight:600;color:#14213D">55.6</p></div>
+<div style="display:flex;flex-direction:row;align-items:center;gap:16px"><p style="width:420px;font-size:24px;text-align:right;color:#14213D"><b>RiL-PPO, 100 iterations</b></p><div style="width:375px;height:32px;background:#2A78D6;border-radius:0 6px 6px 0"></div><p style="font-size:24px;font-weight:600;color:#14213D">37.5</p></div>
+<div style="display:flex;flex-direction:row;align-items:center;gap:16px"><p style="width:420px;font-size:24px;text-align:right;color:#14213D"><b>RiL-PPO, 40 iterations</b></p><div style="width:299px;height:32px;background:#7FB0EA;border-radius:0 6px 6px 0"></div><p style="font-size:24px;font-weight:600;color:#14213D">29.9</p></div>
+<div style="display:flex;flex-direction:row;align-items:center;gap:16px"><p style="width:420px;font-size:24px;text-align:right">PPO, 100 iterations</p><div style="width:280px;height:32px;background:#9AA3AF;border-radius:0 6px 6px 0"></div><p style="font-size:24px;font-weight:600;color:#14213D">28.0</p></div>
+<div style="display:flex;flex-direction:row;align-items:center;gap:16px"><p style="width:420px;font-size:24px;text-align:right">PPO, 40 iterations</p><div style="width:276px;height:32px;background:#9AA3AF;border-radius:0 6px 6px 0"></div><p style="font-size:24px;font-weight:600;color:#14213D">27.6</p></div>
+<div style="display:flex;flex-direction:row;align-items:center;gap:16px"><p style="width:420px;font-size:24px;text-align:right">Read all ~49 entities</p><div style="width:215px;height:32px;background:#9AA3AF;border-radius:0 6px 6px 0"></div><p style="font-size:24px;font-weight:600;color:#14213D">21.5</p></div>
+<div style="display:flex;flex-direction:row;align-items:center;gap:16px"><p style="width:420px;font-size:24px;text-align:right">BM25 top-3 (best heuristic)</p><div style="width:208px;height:32px;background:#9AA3AF;border-radius:0 6px 6px 0"></div><p style="font-size:24px;font-weight:600;color:#14213D">20.8</p></div>
+<div style="display:flex;flex-direction:row;align-items:center;gap:16px"><p style="width:420px;font-size:24px;text-align:right">Bridge hop (hand-written rule)</p><div style="width:190px;height:32px;background:#9AA3AF;border-radius:0 6px 6px 0"></div><p style="font-size:24px;font-weight:600;color:#14213D">19.0</p></div>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:20px">
+<div style="display:flex;flex-direction:column;gap:4px">
+<p style="font-family:'Source Serif 4', Georgia, serif;font-size:120px;font-weight:600;line-height:1;color:#2A78D6">+9.5</p>
+<p style="font-size:24px;line-height:1.4;color:#6B7280">F1 over PPO, 100 iterations each<br>95% CI [8.6, 10.6] · p &lt; 0.001</p>
+</div>
+<ul style="font-size:26px;line-height:1.4;color:#3D4656">
+<li>Answer in evidence: 57% vs 45%</li>
+<li>COMMIT adds +8.0 F1 over max-conf, changes 34% of answers</li>
+<li>Unseen tables: 37.4 vs 27.8</li>
+<li>Unseen reader (RoBERTa): 32.0 vs 28.5</li>
+<li>PPO plateaus after 40 iterations; RiL-PPO keeps learning</li>
+</ul>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#6B7280">EM 31.0 vs 22.8 · every RiL-PPO seed beats every PPO seed · full tables: results/loop/REPORT.md · 6 / 8</p>
+<aside>Results of reader-in-the-loop PPO, on all 3,466 dev questions with three seeds. Trained for 100 iterations it reaches 37.5 F1 and 31.0 EM, against 28.0 F1 for plain PPO with exactly the same budget: a gain of 9.5 points, 95% confidence interval 8.6 to 10.6, and every RiL-PPO seed beats every PPO seed. That is 16.7 points above BM25 and about two thirds of the oracle. The key dynamic: plain PPO saturates, going only from 27.6 to 28.0 between 40 and 100 iterations, while RiL-PPO keeps improving, from 29.9 to 37.5, because the reader's feedback gives it something new to learn from. The diagnostics show both mechanisms at work: the answer is in the selected evidence 57 percent of the time instead of 45, which is the bridge feedback, and the learned COMMIT adds 8 F1 over max-confidence, overriding it on a third of the questions. The gain transfers to tables never seen in training, 37.4 versus 27.8, and to a different reader, RoBERTa, swapped in without retraining, 32.0 versus 28.5 on the first thousand questions. Note that the hand-written bridge rule only gets 19.0, so the gain comes from learning, not from the idea of hopping alone.</aside>
+</section>
