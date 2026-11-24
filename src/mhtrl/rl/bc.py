@@ -1,11 +1,7 @@
-"""Behaviour cloning on oracle paths derived from HybridQA's traced answer nodes.
+"""Behaviour cloning on the traced gold paths.
 
-The traced nodes are noisy (several candidate locations per question), so each oracle
-step has a *set* of acceptable actions T_t and we maximise the marginal likelihood
-    L_BC = - sum_t log sum_{a in T_t} pi(a | s_t).
-Canonical oracle order: gold row first, then (if the answer is in a linked passage) the
-gold passage of that row, then STOP. When several gold rows exist the trajectory is
-continued from the one with the highest hybrid retrieval score.
+Gold evidence is noisy, so each step may have several acceptable actions; we maximise the
+probability of choosing any of them.
 """
 import copy
 import json

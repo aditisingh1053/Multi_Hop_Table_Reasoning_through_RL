@@ -2,14 +2,15 @@
 
 Usage: python scripts/eval/evaluate.py --runs results/runs/ppo_main_s0 results/runs/bc_s0 --split test
 """
-import sys
 import argparse
 import json
+import sys
 import time
 from pathlib import Path
 
 import torch
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # scripts/: common.py
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common import Tee, load_bank, save_json, RESULTS
 
 from mhtrl.device import DEVICE

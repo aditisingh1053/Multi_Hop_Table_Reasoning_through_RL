@@ -1,30 +1,8 @@
-"""PPO (clipped surrogate + GAE, learned critic), GRPO / RLOO (group-relative, critic-free) and
-REINFORCE with a learned baseline, sharing one rollout/reward/evaluation pipeline.
+"""Policy-gradient training: PPO (with GAE), GRPO / Dr. GRPO, RLOO and REINFORCE.
 
-PPO     A_t = sum_l (gamma*lambda)^l delta_{t+l},  delta_t = r_t + gamma V(s_{t+1}) - V(s_t)
-        L   = E[min(rho_t A_t, clip(rho_t, 1-eps, 1+eps) A_t)] + c_H * entropy
-GRPO    G episodes per question; A_i = (R_i - mean_G R) / (std_G R + 1e-6) for every step of
-        episode i; same clipped surrogate, no critic. grpo_std_norm=False gives Dr. GRPO.
-RLOO    A_i = R_i - mean_{j != i} R_j = G/(G-1) (R_i - mean_G R)   (Ahmadian et al., 2024).
-REINF.  A_t = G_t - V(s_t) with Monte-Carlo return-to-go G_t; one pass, no ratio, no clip.
-Losses are averaged over all steps of a minibatch (no per-episode length normalisation).
-
-Optional extensions (all off by default, so the algorithms above are unchanged):
-  commit_rb          Rao-Blackwellised COMMIT. The reader is decomposable and cached, so the
-                     answer score f(a) of *every* COMMIT option is known. The COMMIT step is
-                     trained with the exact expected objective sum_a pi(a|s) f(a) (an
-                     all-action policy gradient with zero sampling variance), and the selection
-                     steps receive the conditional expectation E_{a~pi_old}[f(a)] as terminal
-                     reward instead of one sampled f(a): same expected return, lower variance.
-  privileged_critic  asymmetric actor-critic (Pinto et al., 2018): the critic also sees
-                     training-only features (gold-path coverage, reader F1 of the evidence,
-                     whether a candidate contains the answer). The actor never sees them.
-  sil_coef > 0       self-imitation learning (Oh et al., 2018): a per-question buffer of the best
-                     own episode; extra updates on -log pi(a|s) * max(G_t - V(s_t), 0). Imitates
-                     what worked *for the reader*, unlike cloning the annotated gold paths.
-  action_dropout     exploration by hiding candidates from the sampler (Lin et al., 2018).
-  ema > 0            Polyak / exponential moving average of actor weights (Polyak and Juditsky,
-                     1992; SWA, Izmailov et al., 2018), evaluated next to the raw iterate.
+All algorithms share the same rollouts, rewards and evaluation. The optional extensions in
+RLConfig (Rao-Blackwellised COMMIT, privileged critic, self-imitation, action dropout, EMA
+weights) are off by default.
 """
 import copy
 import json
@@ -70,7 +48,7 @@ class RLConfig:
     eval_every: int = 5
     seed: int = 0
     init_actor: str = ""          # BC checkpoint; empty = random initialisation
-    # --- extensions (see module docstring) ---
+    # extensions, all off by default
     commit_rb: bool = False
     commit_coef: float = 1.0
     privileged_critic: bool = False
@@ -289,7 +267,7 @@ def train_rl(train_bank: Bank, val_bank: Bank, cache: ReaderCache, env_cfg: EnvC
                 a, b = bounds[e], bounds[e + 1]
                 ret[a:b] = returns_to_go(rewards[j], rc.gamma)
                 adv[a:b] = ret[a:b] - values[a:b]
-        else:  # grpo / rloo: group-relative advantage of the episode return, shared by all its steps
+        else:  # grpo / rloo: one group-relative advantage per episode
             total = np.array([rewards[j].sum() for j in range(len(eps))], dtype=np.float32)
             a_ep = group_advantages(total, cfg.group_size, cfg.algo, cfg.grpo_std_norm)
             for e, j in enumerate(keep):
@@ -362,7 +340,7 @@ def train_rl(train_bank: Bank, val_bank: Bank, cache: ReaderCache, env_cfg: EnvC
                     and cfg.algo != "reinforce":
                 kl_stop = True
 
-        # self-imitation: keep each question's best successful episode, imitate positive-advantage steps
+        # self-imitation: replay each question's best episode
         if cfg.sil_coef > 0:
             for e, j in enumerate(keep):
                 if ans[j] <= 0:

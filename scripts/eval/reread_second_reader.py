@@ -7,11 +7,11 @@ with the tag "_roberta-base-squad2-cpu" so that they never mix with the GPU-run 
 
 Usage: python scripts/eval/reread_second_reader.py
 """
+import json
 import sys
 from pathlib import Path
-import json
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # scripts/: common.py
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common import RESULTS, Tee, load_bank, save_json
 
 from mhtrl.baselines import oracle

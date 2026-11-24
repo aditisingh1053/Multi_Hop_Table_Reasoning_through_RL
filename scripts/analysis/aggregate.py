@@ -6,16 +6,17 @@ interval for the difference and a one-sided p-value.
 
 Usage: python scripts/analysis/aggregate.py --split test
 """
-import sys
 import argparse
 import glob
 import json
 import re
+import sys
 from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # scripts/: common.py
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common import RESULTS, save_json
 
 METRICS = ["EM", "F1", "table_EM", "table_F1", "passage_EM", "passage_F1",

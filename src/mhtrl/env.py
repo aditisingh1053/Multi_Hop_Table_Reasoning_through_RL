@@ -1,23 +1,8 @@
-"""Entity-selection MDP over the per-question table/passage graph.
+"""The evidence-selection MDP over one question's graph of table rows and passages.
 
-State   s_t = (question, evidence set E_t, last selected entity, step t)
-Actions A_t = C_t U {STOP}, where the candidate set C_t contains
-          * every table row that is not yet selected,
-          * the k globally best-matching passages (hybrid lexical+dense score), and
-          * every passage hyperlinked from an already selected row (graph expansion).
-          STOP is unavailable at t = 0 (the reader needs at least one entity).
-Episode ends on STOP or after H selections (forced stop).
-
-Reader-in-the-loop extension (EnvConfig.reader_loop / EnvConfig.commit, both off by default, so
-the original environment is unchanged):
-  * reader_loop: after every hop the frozen reader's span for each selected entity (an
-    intermediate "bridge" answer) is part of the observation. Candidates get bridge features
-    (contains a bridge span; is the passage titled by a bridge span), the state gets reader
-    confidences and the question type. Hop t+1 is conditioned on what hop t actually found.
-  * commit: after selection ends, one extra COMMIT step chooses which selected entity's span
-    is the final answer, replacing the fixed max-confidence aggregation. Its logit has a
-    residual prior equal to the reader score, so the untrained head *is* max-confidence.
-Neither costs extra reader calls: only selected entities are read, exactly as for the reward.
+At each step the agent picks a row or passage (or STOP after the first pick), up to H picks.
+With `reader_loop` the reader's answer for each picked entity is added to the observation, and
+with `commit` one extra step chooses which picked entity gives the final answer.
 """
 import math
 import pickle
@@ -36,7 +21,7 @@ N_CAND_FEAT = 14
 N_STATE_SCALAR = 8
 STATE_DIM = 3 * EMB_DIM + N_STATE_SCALAR
 
-# reader-in-the-loop blocks, appended after the original features / scalars
+# reader-in-the-loop features, appended after the base ones
 LOOP_CAND_FEATURES = [
     "bridge_in_text", "bridge_is_title", "last_bridge_in_text", "bridge_in_row",   # select phase
     "commit_conf", "commit_score", "commit_is_maxconf", "commit_span_in_q",          # commit phase
@@ -277,7 +262,7 @@ class Episode:
         p, sel, H, ro = self.p, self.selected, self.cfg.horizon, self.reader_out
         fx = np.zeros((len(cands), N_LOOP_CAND), dtype=np.float32)
         sx = np.zeros(N_LOOP_STATE, dtype=np.float32)
-        # the policy sees reader outputs while selecting only with reader_loop; always when committing
+        # reader outputs are visible while selecting only with reader_loop, and always when committing
         see_reader = self.cfg.reader_loop or self.in_commit
         if not see_reader:
             return sx, fx
@@ -399,12 +384,10 @@ class RewardConfig:
 
 def episode_rewards(p: Prepared, selected: Sequence[int], stopped_explicitly: bool,
                     answer_score: float, rc: RewardConfig, commit_steps: int = 0) -> np.ndarray:
-    """Per-step rewards for one finished episode.
+    """Per-step rewards: step cost, potential-based shaping and the answer score at the end.
 
-    Steps: one per selection, one if the episode ended with an explicit STOP, and
-    `commit_steps` (0 or 1) for the COMMIT decision. State k has potential Phi(E_min(k, |E|))
-    and the terminal state has potential 0, so with gamma = 1 the shaping terms telescope to
-    -Phi(s_0) = 0 and the optimal policy is unchanged (Ng, Harada and Russell, 1999).
+    The shaping terms sum to zero over an episode (Phi is 0 at the start and the end), so they do
+    not change the optimal policy. The COMMIT step, if any, keeps the potential of the final set.
     """
     n_sel = len(selected)
     n_steps = n_sel + (1 if stopped_explicitly else 0) + commit_steps

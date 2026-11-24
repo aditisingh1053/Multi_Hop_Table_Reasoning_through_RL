@@ -46,8 +46,7 @@ def collate(bank: Bank, recs: Sequence[StepRec], k_max: int):
 
 
 def feed_reader(eps: Sequence[Episode], cache: ReaderCache):
-    """Reads every selected-but-unread entity of the given episodes (batched) and stores the
-    (span, score) outputs in the episodes. These are exactly the reads the reward needs anyway."""
+    """Read every newly selected entity of these episodes and store the result in them."""
     todo = []
     for ep in eps:
         for n in ep.selected:
@@ -65,17 +64,10 @@ def rollout(bank: Bank, item_ids: Sequence[int], actor, env_cfg: EnvConfig, gree
             gen: Optional[torch.Generator] = None, chunk: int = 1024,
             cache: Optional[ReaderCache] = None, action_dropout: float = 0.0,
             temperature: float = 1.0):
-    """Runs one episode per entry of item_ids. Returns (episodes, step records, stopped flags).
+    """Play one episode per question in item_ids, all in lock-step.
 
-    With the reader-in-the-loop extension the frozen reader is queried between steps for the
-    newly selected entities (cache required).
-
-    Sampling only (greedy=False):
-      action_dropout  each valid entity candidate is hidden from the *sampler* with this
-                      probability (Lin et al., 2018); STOP and COMMIT decisions are never
-                      dropped. The recorded log-probability is that of the full policy, so the
-                      PPO ratio stays consistent between rollout and update.
-      temperature     sampling temperature (test-time self-consistency); logp is untempered.
+    Returns (episodes, step records, stopped flags). `action_dropout` hides some candidates from
+    the sampler only, and `temperature` is used for self-consistency sampling.
     """
     k_max = env_cfg.max_cands
     loop = uses_loop(env_cfg)
@@ -133,8 +125,7 @@ def rollout(bank: Bank, item_ids: Sequence[int], actor, env_cfg: EnvConfig, gree
 
 def predict(bank: Bank, item_ids: Sequence[int], sets: Sequence[Sequence[int]],
             cache: ReaderCache, commits: Optional[Sequence[Optional[int]]] = None) -> List[str]:
-    """Final answers. Default: span of the most confident selected entity. If commits[k] is an
-    entity index, the answer is that entity's span (learned COMMIT)."""
+    """Final answers: the committed entity's span if given, else the most confident span."""
     items = []
     for i, s in zip(item_ids, sets):
         p = bank.items[i]
@@ -159,11 +150,8 @@ def answer_score(gold: str, pred: str, metric: str) -> float:
 
 def evaluate_sets(bank: Bank, item_ids: Sequence[int], sets: Sequence[Sequence[int]],
                   cache: ReaderCache, commits: Optional[Sequence[Optional[int]]] = None):
-    """Returns (summary dict, per-question rows).
-
-    Besides the final answer, every row records two arbitration diagnostics on the same set:
-    f1_maxconf (the reader's max-confidence rule) and f1_best (best span inside the set, an
-    oracle arbiter). They split the error into selection loss and aggregation loss."""
+    """Score the chosen evidence sets. Returns (summary, per-question rows), including the F1 of
+    max-confidence and of the best answer in each set."""
     preds = predict(bank, item_ids, sets, cache, commits)
     maxconf = predict(bank, item_ids, sets, cache)
     rows = []
@@ -187,14 +175,7 @@ def evaluate_sets(bank: Bank, item_ids: Sequence[int], sets: Sequence[Sequence[i
 @torch.no_grad()
 def self_consistency_eval(bank: Bank, actor, env_cfg: EnvConfig, cache: ReaderCache, k: int = 8,
                           temperature: float = 1.0, seed: int = 0, ids=None):
-    """Test-time self-consistency over evidence paths (after Wang et al., ICLR 2023).
-
-    Runs the greedy episode plus k-1 sampled episodes per question; each episode yields an
-    answer (its COMMIT choice, or max confidence). The final answer is the most frequent
-    normalised answer; ties are broken by the summed reader score of its supporting episodes,
-    then by the greedy answer. Reports the number of distinct entities read per question, i.e.
-    the reader cost of the extra test-time compute.
-    """
+    """Majority vote over the greedy episode and k-1 sampled episodes (self-consistency)."""
     ids = list(range(len(bank))) if ids is None else list(ids)
     was_training = actor.training
     actor.eval()

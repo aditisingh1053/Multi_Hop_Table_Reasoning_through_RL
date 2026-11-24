@@ -1,11 +1,7 @@
-"""Frozen extractive reader with a persistent per-(question, entity) cache.
+"""Frozen extractive QA reader, with a cache keyed by (question, entity).
 
-Every selected entity (row or passage) is read independently together with the
-question; the answer for an evidence set E is the span of the entity with the highest
-null-adjusted span score  s(e) = max_span(start + end logit) - (start + end logit of [CLS]).
-This open-domain style aggregation (as in DrQA-like retriever-reader systems) makes the
-reader output decomposable over entities, so it can be cached and re-used across all
-methods, seeds and training iterations.
+Each entity is read on its own, so a set of entities can be answered by taking the most
+confident span, and every read can be cached and shared across runs.
 """
 import os
 import pickle

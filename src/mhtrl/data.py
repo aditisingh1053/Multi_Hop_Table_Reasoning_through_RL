@@ -1,11 +1,8 @@
-"""HybridQA loading and per-question entity graph construction.
+"""Loads HybridQA and turns each question into a graph of table rows and linked passages.
 
-Each question becomes an `Instance` whose nodes are the entities the policy can select:
-  * row nodes      -- one per table row, linearised as "header is value ; ..."
-  * passage nodes  -- one per Wikipedia passage hyperlinked from a cell of the table
-Edges connect a row to every passage linked from one of its cells. Gold evidence comes
-from the `answer-node` field of HybridQA's train/dev.traced.json (weak labels produced
-by string matching, see HybridQA/trace_answer.py).
+Rows are written as "header is value ; ...", passages are the Wikipedia pages linked from the
+table's cells, and an edge joins a row to the passages it links to. Gold evidence comes from
+HybridQA's traced answer nodes (found by string matching, so it is noisy).
 """
 import json
 import urllib.parse

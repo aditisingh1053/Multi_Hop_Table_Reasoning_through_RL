@@ -20,9 +20,9 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
-from mhtrl.data import build_instance, load_dev_answer_types, load_questions, load_tables  # noqa: E402
-from mhtrl.encoder import FrozenEncoder  # noqa: E402
-from mhtrl.text import BM25, words  # noqa: E402
+from mhtrl.data import build_instance, load_dev_answer_types, load_questions, load_tables
+from mhtrl.encoder import FrozenEncoder
+from mhtrl.text import BM25, words
 
 
 def table_disjoint_split(questions, n_train, n_val, seed):

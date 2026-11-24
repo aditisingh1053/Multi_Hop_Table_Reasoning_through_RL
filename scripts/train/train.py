@@ -2,15 +2,15 @@
 
 Usage:
   python scripts/train/train.py --method bc  --seed 0
-  python scripts/train/train.py --config configs/ppo.yaml --seed 0 [--set rl.iters=30 ...]
+  python scripts/train/train.py --config configs/baseline/ppo_main.yaml --seed 0 [--set rl.iters=30 ...]
 Outputs go to results/runs/<name>_s<seed>/.
 """
-import sys
-from pathlib import Path
 import argparse
+import sys
 from dataclasses import asdict
+from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # scripts/: common.py
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common import RESULTS, Tee, load_bank, save_json
 
 from mhtrl.config import load_config

@@ -10,13 +10,13 @@ import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from mhtrl.env import (EMB_DIM, EnvConfig, Episode, Prepared, RewardConfig,  # noqa: E402
+from mhtrl.env import (EMB_DIM, EnvConfig, Episode, Prepared, RewardConfig,
                        episode_rewards)
-from mhtrl.device import DEVICE, to_device  # noqa: E402
-from mhtrl.policy import Critic, PointerActor  # noqa: E402
-from mhtrl.rl.algos import gae, returns_to_go  # noqa: E402
-from mhtrl.rollout import StepRec, collate  # noqa: E402
-from mhtrl.text import contains_answer, exact_match, f1_score, normalize_answer  # noqa: E402
+from mhtrl.device import DEVICE, to_device
+from mhtrl.policy import Critic, PointerActor
+from mhtrl.rl.algos import gae, returns_to_go
+from mhtrl.rollout import StepRec, collate
+from mhtrl.text import contains_answer, exact_match, f1_score, normalize_answer
 
 
 def toy_instance():

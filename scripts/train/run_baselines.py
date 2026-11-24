@@ -2,13 +2,14 @@
 
 Usage: python scripts/train/run_baselines.py --split test
 """
-import sys
-from pathlib import Path
 import argparse
+import sys
 import time
+from pathlib import Path
 
 import numpy as np
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # scripts/: common.py
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common import RESULTS, Tee, load_bank, save_json
 
 from mhtrl.baselines import greedy_hop, oracle, random_walk, topk

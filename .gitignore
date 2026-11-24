@@ -28,3 +28,6 @@ report/*.out
 report/*.toc
 report/*.bbl
 report/*.blg
+
+# ---- generated markdown report (python scripts/analysis/loop_report.py) ----
+results/loop/REPORT.md

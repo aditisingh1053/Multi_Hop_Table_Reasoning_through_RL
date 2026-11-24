@@ -1,15 +1,8 @@
-"""Pointer-style actor and a separate critic over a variable-size candidate set.
+"""Pointer-network actor and a separate critic over a variable number of candidates.
 
-Actor:  h = f_s(s),  g_a = f_c([e_a ; x_a]),  score(a) = w^T ReLU(W [h ; g_a ; h * g_a])
-        score(STOP) = f_stop([h ; scalar state features])
-        pi(a | s) = softmax over the *valid* entries; invalid entries get a large negative
-        logit, so they receive zero probability and zero gradient (masking, not penalties).
-Critic: V(s) = f_v([h' ; mean_a g'_a ; max_a g'_a]) with its own parameters, since separate
-        policy and value networks were found to work better than a shared trunk.
-Commit (reader-in-the-loop only): in the COMMIT phase the candidates are the selected
-        entities and score(e) = beta * reader_score(e) + c(h, g_e), with beta initialised so
-        that beta * feature = raw reader score and c initialised near 0: the untrained head
-        reproduces the reader's max-confidence aggregation, and PPO learns the residual.
+Each candidate gets one logit from the same network; invalid actions are masked out. In the
+COMMIT phase the logit is `commit_prior * reader_score + learned correction`, so before training
+the commit step behaves exactly like picking the reader's most confident answer.
 """
 import math
 

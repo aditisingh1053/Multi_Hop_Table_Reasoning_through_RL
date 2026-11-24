@@ -7,18 +7,19 @@ file already exists is skipped, so after a disconnect the same command simply co
 
 Usage: python scripts/train/run_suite.py [--seeds-main 5] [--seeds-ablation 3]
 """
-import sys
 import argparse
 import json
 import os
 import platform
+import sys
 import time
 from pathlib import Path
 
 import numpy as np
 import torch
 import transformers
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # scripts/: common.py
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common import RESULTS, ROOT, Tee, config_path, load_bank, save_json
 
 from mhtrl.baselines import greedy_hop, oracle, random_walk, topk

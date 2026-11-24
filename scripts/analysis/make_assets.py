@@ -5,20 +5,21 @@ Inputs : results/baselines/<split>/*.json, results/runs/<name>_s<seed>/{history.
 Outputs: report/generated/*.tex, report/figures/*.pdf, results/assets_summary.json
 Usage  : python scripts/analysis/make_assets.py
 """
-import sys
-from pathlib import Path
 import glob
 import json
 import pickle
 import re
+import sys
+from pathlib import Path
 
 import matplotlib
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt  # noqa: E402
-import numpy as np  # noqa: E402
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # scripts/: common.py
-from common import DATA, RESULTS, ROOT, save_json  # noqa: E402
+import matplotlib.pyplot as plt
+import numpy as np
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from common import DATA, RESULTS, ROOT, save_json
 
 GEN = ROOT / "report" / "generated"
 FIG = ROOT / "report" / "figures"
@@ -210,7 +211,7 @@ def tests_table(summary):
              r"\label{tab:tests}", r"\setlength{\tabcolsep}{4pt}", r"\begin{tabular}{@{}llccccc@{}}", r"\toprule",
              r"A & B & $\Delta$EM [95\% CI] & $p$ & $\Delta$F1 [95\% CI] & $p$ & $P(\mathrm{A}>\mathrm{B})$ \\",
              r"\midrule"]
-    pv = lambda p: "$<$0.001" if p < 0.001 else f"{p:.3f}"  # noqa: E731
+    pv = lambda p: "$<$0.001" if p < 0.001 else f"{p:.3f}"
     short = {"ppo_scratch": "PPO scratch", "ppo_main": "PPO warm", "bc": "BC", "reinforce": "REINFORCE",
              "grpo": "GRPO", "bm25_k3": "BM25 top-3", "hybrid_k3": "Hybrid top-3", "greedy_hop": "Greedy hop"}
     for a, b in PAIRS:
@@ -222,7 +223,7 @@ def tests_table(summary):
         pi = prob_improvement([r["summary"]["F1"] for r in ra], [r["summary"]["F1"] for r in rb])
         summary.setdefault("tests", {})[f"{a}:{b}"] = {"dEM": [dem, lem, hem, pem], "dF1": [df1, lf1, hf1, pf1],
                                                        "P_imp": pi}
-        sg = lambda x: num(x, 2, plus=True)  # noqa: E731
+        sg = lambda x: num(x, 2, plus=True)
         lines.append(f"{short[a]} & {short[b]} & {sg(dem)} [{sg(lem)}, {sg(hem)}] & {pv(pem)} & "
                      f"{sg(df1)} [{sg(lf1)}, {sg(hf1)}] & {pv(pf1)} & {pi:.2f} \\\\")
     lines += [r"\bottomrule", r"\end{tabular}", r"\end{table}"]

@@ -1,30 +1,23 @@
-"""Reader-in-the-loop PPO (RiL-PPO) experiments; resumable, writes to results/loop/.
+"""Runs every Reader-in-the-Loop PPO experiment, in priority order, and writes results/loop/.
 
-Runs, on the same data, reader and budget as the main suite, in priority order (so that a
-time-limited session still ends with the most important results):
-  1 baselines  bm25_k3, hybrid_k3, greedy_hop, bridge_hop (non-learned reader-in-the-loop rule),
-               read_all (read every entity, max confidence), oracle
-  2 core       ppo_scratch (control), loop_full, loop_feedback, loop_commit         (40 it)
-  3 plus       plus_all (RiL-PPO++), plus_rb, plus_asym, plus_sil, plus_drop, plus_ema  (40 it)
-  4 optimisers opt_rloo, opt_drgrpo, opt_grpo on the reader-in-the-loop environment  (40 it)
-  5 long       ppo_scratch_long, loop_full_long, plus_all_long                      (100 it)
-  6 test-time  self-consistency (k = 8 evidence paths) for ppo_scratch, loop_full, plus_all
-  7 transfer   second reader (RoBERTa-base), first 1,000 test questions
-  report       scripts/analysis/loop_report.py -> results/loop/REPORT.md and summary.json
+Stages: baselines, core runs, extensions, critic-free optimisers, 100-iteration runs,
+self-consistency and the RoBERTa reader transfer. Finished runs are skipped, so the script can
+simply be restarted.
 
 Usage: python scripts/train/run_loop_suite.py [--seeds 3] [--no-long] [--skip-plus] [--skip-opt]
-                                        [--no-sc] [--smoke]
+                                              [--no-sc] [--smoke]
 """
 import argparse
 import json
 import platform
 import subprocess
 import sys
-from pathlib import Path
 import time
+from pathlib import Path
 
 import torch
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # scripts/: common.py
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common import RESULTS, ROOT, Tee, config_path, load_bank, save_json
 
 from mhtrl.baselines import bridge_hop, greedy_hop, oracle, read_all, topk

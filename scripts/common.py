@@ -13,12 +13,12 @@ if sys.platform == "win32":
     import ctypes
     ctypes.windll.kernel32.SetThreadExecutionState(0x80000000 | 0x00000001)  # ES_CONTINUOUS | ES_SYSTEM_REQUIRED
 
-import numpy as np  # noqa: E402
-import torch  # noqa: E402
+import numpy as np
+import torch
 
 torch.set_num_threads(min(8, os.cpu_count() or 8))  # fixed count: cached reader outputs stay reproducible
 
-from mhtrl.env import Bank  # noqa: E402
+from mhtrl.env import Bank
 
 DATA = Path(os.environ.get("MHTRL_DATA", ROOT / "data" / "processed"))
 RESULTS = Path(os.environ.get("MHTRL_RESULTS", ROOT / "results"))

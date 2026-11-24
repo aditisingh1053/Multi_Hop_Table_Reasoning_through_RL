@@ -1,12 +1,5 @@
-"""Non-learned evidence selectors. Each returns a list of node indices for one question.
-
-random_walk   uniform choice from the environment's candidate set, fixed budget
-topk(score)   the k highest-scoring entities, ignoring the graph (BM25 / dense / hybrid);
-              the dense variant is the row/cell retrieval step of TableRAG-style pipelines
-greedy_hop    link-then-hop heuristic (HYBRIDER / hybrid-graph style): best row by hybrid
-              score, then the best passage hyperlinked from that row
-oracle        best traced gold path, judged by the frozen reader (upper bound)
-"""
+"""Fixed (non-learned) evidence selectors: random walk, top-k retrieval, greedy hop,
+bridge hop, read everything, and the oracle gold path."""
 from typing import List
 
 import numpy as np

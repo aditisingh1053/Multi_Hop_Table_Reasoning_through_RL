@@ -1,42 +1,29 @@
-"""Inference demo: run the trained RiL-PPO selector on one HybridQA dev question and show
-every decision in detail.
+"""Run the trained RiL-PPO policy on one dev question and print every decision.
 
-  python scripts/eval/demo.py --idx 2 --fresh        # showcase question, reader runs live on the GPU
-  python scripts/eval/demo.py --find "nationality"   # first dev question containing this text
-  python scripts/eval/demo.py                        # a random dev question
-  python scripts/eval/demo.py --top 8                # show more candidates per step
-
-Pipeline per question (nothing is trained here: greedy actions, frozen reader):
-  1. load the question's entity graph (table rows + linked passages, pre-embedded by MiniLM)
-  2. repeat up to 3 hops: the policy scores every candidate + STOP, takes the best one;
-     the frozen reader reads the chosen entity and its answer is fed back into the state
-  3. COMMIT: the policy chooses which selected entity's answer is final
-  4. compare the final answer with the gold answer (EM / F1)
+  python scripts/eval/demo.py --idx 2 --fresh        # example question, reader runs live
+  python scripts/eval/demo.py --find "nationality"   # first question containing this text
+  python scripts/eval/demo.py                        # random question
 """
-import sys
 import argparse
 import random
+import sys
 import tempfile
 import time
 import warnings
 from pathlib import Path
 
-warnings.filterwarnings("ignore")
-import transformers  # noqa: E402
+import torch
+import transformers
 
-transformers.logging.set_verbosity_error()
-
-import torch  # noqa: E402
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # scripts/: common.py
-from common import load_bank  # noqa: E402
-
-from evaluate import env_of  # noqa: E402
-from mhtrl.device import DEVICE, to_device  # noqa: E402
-from mhtrl.env import CAND_FEATURES, LOOP_CAND_FEATURES, ROW  # noqa: E402
-from mhtrl.policy import make_actor  # noqa: E402
-from mhtrl.reader import DEFAULT_READER, ReaderCache  # noqa: E402
-from mhtrl.rollout import collate, predict, rollout  # noqa: E402
-from mhtrl.text import exact_match, f1_score  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from common import load_bank
+from evaluate import env_of
+from mhtrl.device import DEVICE, to_device
+from mhtrl.env import CAND_FEATURES, LOOP_CAND_FEATURES, ROW
+from mhtrl.policy import make_actor
+from mhtrl.reader import DEFAULT_READER, ReaderCache
+from mhtrl.rollout import collate, predict, rollout
+from mhtrl.text import exact_match, f1_score
 
 DEFAULT_RUN = "results/loop/runs/loop_full_long_s0"
 FI = {n: i for i, n in enumerate(CAND_FEATURES + LOOP_CAND_FEATURES)}
@@ -73,6 +60,9 @@ def probs_of(bank, rec, actor, k_max):
 
 
 def main():
+    warnings.filterwarnings("ignore")
+    transformers.logging.set_verbosity_error()
+
     ap = argparse.ArgumentParser()
     ap.add_argument("--run", default=DEFAULT_RUN)
     ap.add_argument("--idx", type=int, default=None)
