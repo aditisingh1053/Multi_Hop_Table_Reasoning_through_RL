@@ -22,6 +22,15 @@ from mhtrl.env import Bank  # noqa: E402
 
 DATA = Path(os.environ.get("MHTRL_DATA", ROOT / "data" / "processed"))
 RESULTS = Path(os.environ.get("MHTRL_RESULTS", ROOT / "results"))
+CONFIGS = ROOT / "configs"
+
+
+def config_path(name: str) -> Path:
+    """configs/<group>/<name>.yaml for a config name such as 'loop_full' (names are unique)."""
+    hits = sorted(CONFIGS.rglob(f"{name}.yaml"))
+    if len(hits) != 1:
+        raise FileNotFoundError(f"expected exactly one configs/**/{name}.yaml, found {len(hits)}")
+    return hits[0]
 
 
 # Training uses the first 5,000 questions of the table-ordered training split (whole tables,

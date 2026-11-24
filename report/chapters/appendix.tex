@@ -6,24 +6,24 @@ The results of Chapter~\ref{ch:results} were produced in three steps. Step 1 ran
 \begin{footnotesize}
 \begin{verbatim}
 # Step 1 (GPU): data, baselines, all training runs, dev-set evaluation, results_bundle.zip
-bash scripts/run_all_gpu.sh            # resumable; SMOKE=1 runs a 2-3 minute check first
+bash scripts/gpu/run_all_gpu.sh            # resumable; SMOKE=1 runs a 2-3 minute check first
 #   clones HybridQA and WikiTables-WithLinks, then runs, in order:
-#   scripts/extract_wikitables.py      tables and passages read from the git object store
-#   scripts/build_instances.py --n_train 10000 --n_val 1000
+#   scripts/data/extract_wikitables.py      tables and passages read from the git object store
+#   scripts/data/build_instances.py --n_train 10000 --n_val 1000
 #   tests/test_core.py                 unit tests
-#   scripts/data_stats.py
-#   scripts/run_suite.py --seeds-main 5 --seeds-ablation 3
+#   scripts/data/data_stats.py
+#   scripts/train/run_suite.py --seeds-main 5 --seeds-ablation 3
 
 # Step 2 (CPU): second-reader transfer for every selector, in one environment
-python scripts/reread_second_reader.py
+python scripts/eval/reread_second_reader.py
 
 # Step 3 (CPU): tables, figures, number macros and the PDF
-python scripts/make_assets.py
+python scripts/analysis/make_assets.py
 cd report && tectonic -X compile main.tex
 \end{verbatim}
 \end{footnotesize}
 
-Single runs can also be started on their own, for example \texttt{python scripts/train.py --method bc --seed 0} or \texttt{python scripts/train.py --config configs/ppo\_scratch.yaml --seed 0}. The training subset size is set by \texttt{TRAIN\_LIMIT} in \texttt{scripts/common.py} (5{,}000).
+Single runs can also be started on their own, for example \texttt{python scripts/train/train.py --method bc --seed 0} or \texttt{python scripts/train/train.py --config configs/ppo\_scratch.yaml --seed 0}. The training subset size is set by \texttt{TRAIN\_LIMIT} in \texttt{scripts/common.py} (5{,}000).
 
 \chapter{Repository Layout}
 \label{app:layout}

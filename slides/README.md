@@ -1,23 +1,21 @@
-# Presentation slides
+# Slides
 
-Nine slides (title + Problem & Motivation, Related Work, Dataset & Approach, Progress So Far, RiL-PPO Method, RiL-PPO Results, Ablations, Takeaways & Next Steps).
-
-| File | Use |
+| Folder | Contents |
 |---|---|
-| `slides.pdf` | Present or submit as is (16:9, one slide per page) |
-| `slides.pptx` | PowerPoint version: each slide is a full-slide image; the speaker notes are in the notes pane |
-| `slides.html` | Standalone version; open in any browser (fonts load from Google Fonts) |
-| `png/` | Each slide as a 1920×1080 image |
-| `source/` | The deck's source files (`deck.json` and one HTML file per slide) |
-| `build_slides.py` | Rebuilds the files above from `source/` |
+| `final/` | Final presentation: `final_presentation.pdf`, `final_presentation.pptx` (speaker notes in the notes pane). Source: `deck.html`; figures: `fig/` |
+| `progress/` | Progress-evaluation presentation: `slides.pdf`, `slides.pptx`; source in `source/` |
+| `architecture/` | System architecture diagram: `architecture.png` / `.svg` |
 
-The PPTX slides are images, so their text cannot be edited in PowerPoint. For an editable PowerPoint file, open the online deck and download it as PPTX from there. Alternatively, edit `source/slides/*.html` and rebuild:
+The PPTX files contain one full-slide image per page, so edit the HTML source and rebuild:
 
 ```bash
-python slides/build_slides.py html
+# final deck (figures from results/loop, then PDF via Chrome, then PPTX)
+python slides/final/make_figures.py
 "C:/Program Files/Google/Chrome/Application/chrome.exe" --headless=new --no-pdf-header-footer \
-    --virtual-time-budget=15000 --print-to-pdf=slides/slides.pdf slides/slides.html
-PYTHONPATH=tools/pylib python slides/build_slides.py pptx
-```
+    --virtual-time-budget=20000 --print-to-pdf=slides/final/final_presentation.pdf \
+    file:///D:/7th_sem/oml/slides/final/deck.html
+python slides/final/build_pptx.py          # needs pymupdf and python-pptx
 
-The title slide carries the authors, course, TA, department, institute and date.
+# architecture diagram (see the header of make_architecture.py for the PNG step)
+python slides/architecture/make_architecture.py
+```

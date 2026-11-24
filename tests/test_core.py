@@ -368,7 +368,7 @@ def test_self_consistency_eval():
 def test_configs_load():
     from mhtrl.config import load_config
     root = Path(__file__).resolve().parents[1] / "configs"
-    for f in sorted(root.glob("*.yaml")):
+    for f in sorted(root.rglob("*.yaml")):
         cfg = load_config(str(f))
         if cfg["rl"].commit_rb:
             assert cfg["env"].commit, f

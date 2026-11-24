@@ -1,0 +1,5 @@
+# Keep Unix line endings in scripts so they run on Linux GPU machines (Kaggle, Colab, WSL).
+*.sh   text eol=lf
+*.py   text eol=lf
+*.yaml text eol=lf
+*.md   text eol=lf

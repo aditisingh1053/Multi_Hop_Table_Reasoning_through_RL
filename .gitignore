@@ -1,19 +1,30 @@
-# raw and processed data (re-created by scripts/extract_wikitables.py and scripts/build_instances.py)
+# ---- local only: personal notes, papers, talk scripts, bundles (never committed) ----
+local/
+/*.zip
+/*.log
+
+# ---- data and model artefacts (re-created by the scripts) ----
 data/
-# local toolchain (Tectonic LaTeX engine)
-tools/
-logs/
+*.pt
+results_smoke/
+results/logs/
+
+# ---- generated previews and intermediate renders ----
+slides/**/png/
+slides/architecture/architecture.html
+
+# ---- Python / tooling ----
 __pycache__/
 *.pyc
-# model checkpoints are re-created by scripts/train.py
-*.pt
-# LaTeX build artefacts
+.venv/
+venv/
+tools/
+logs/
+
+# ---- LaTeX build artefacts ----
 report/*.aux
 report/*.log
 report/*.out
 report/*.toc
 report/*.bbl
 report/*.blg
-gpu_bundle.zip
-results_bundle.zip
-results_smoke/

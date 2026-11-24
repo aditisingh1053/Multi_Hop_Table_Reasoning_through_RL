@@ -1,0 +1,172 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2160" height="1580" viewBox="0 0 2160 1580" font-family="&apos;Source Sans 3&apos;, Arial, sans-serif"><defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#333333"/></marker><marker id="arR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8C1D18"/></marker></defs><rect width="2160" height="1580" fill="#FFFFFF"/><text x="30" y="52" font-size="38" font-weight="700" font-family="&apos;Source Serif 4&apos;, Georgia, serif" fill="#17253F">Reader-in-the-Loop PPO for multi-hop table + text QA: system architecture</text>
+<rect x="30" y="80" width="2100" height="310" fill="#F8F9FB" stroke="#D5DAE1" stroke-width="1.5"/>
+<rect x="30" y="80" width="110" height="310" fill="#E9ECF1" stroke="#D5DAE1" stroke-width="1.5"/>
+<text transform="translate(78,235.0) rotate(-90)" text-anchor="middle" font-size="25" font-weight="700" fill="#17253F">A · Data preparation</text>
+<text transform="translate(110,235.0) rotate(-90)" text-anchor="middle" font-size="18" fill="#5C6370">offline, run once</text>
+<rect x="30" y="420" width="2100" height="690" fill="#F8F9FB" stroke="#D5DAE1" stroke-width="1.5"/>
+<rect x="30" y="420" width="110" height="690" fill="#E9ECF1" stroke="#D5DAE1" stroke-width="1.5"/>
+<text transform="translate(78,765.0) rotate(-90)" text-anchor="middle" font-size="25" font-weight="700" fill="#17253F">B · Training</text>
+<text transform="translate(110,765.0) rotate(-90)" text-anchor="middle" font-size="18" fill="#5C6370">RL loop, 1,024 episodes / iteration</text>
+<rect x="30" y="1140" width="2100" height="330" fill="#F8F9FB" stroke="#D5DAE1" stroke-width="1.5"/>
+<rect x="30" y="1140" width="110" height="330" fill="#E9ECF1" stroke="#D5DAE1" stroke-width="1.5"/>
+<text transform="translate(78,1305.0) rotate(-90)" text-anchor="middle" font-size="25" font-weight="700" fill="#17253F">C · Inference &amp; evaluation</text>
+<text transform="translate(110,1305.0) rotate(-90)" text-anchor="middle" font-size="18" fill="#5C6370">greedy policy, no training</text>
+<rect x="170" y="130" width="300" height="220" rx="6" fill="#FFFFFF" stroke="#8A919C" stroke-width="2" stroke-dasharray="9,6"/>
+<text x="188" y="168" font-size="25" font-weight="700" fill="#17253F">HybridQA dataset</text>
+<text x="456" y="168" font-size="18" text-anchor="end" fill="#5C6370">GitHub</text>
+<text x="188" y="202" font-size="20.5" fill="#1E1E1E">questions + gold answers</text>
+<text x="188" y="231" font-size="20.5" fill="#1E1E1E">WikiTables-WithLinks:</text>
+<text x="188" y="260" font-size="20.5" fill="#1E1E1E">Wikipedia tables and the</text>
+<text x="188" y="289" font-size="20.5" fill="#1E1E1E">passages their cells link to</text>
+<rect x="540" y="130" width="300" height="220" rx="6" fill="#FFFFFF" stroke="#8A919C" stroke-width="2"/>
+<text x="558" y="168" font-size="25" font-weight="700" fill="#17253F">extract_wikitables.py</text>
+<text x="558" y="202" font-size="20.5" fill="#1E1E1E">reads the tables and</text>
+<text x="558" y="231" font-size="20.5" fill="#1E1E1E">linked passages</text>
+<text x="558" y="260" font-size="20.5" fill="#1E1E1E">→ wikitables.jsonl</text>
+<rect x="910" y="130" width="400" height="220" rx="6" fill="#FFFFFF" stroke="#8A919C" stroke-width="2"/>
+<text x="928" y="168" font-size="25" font-weight="700" fill="#17253F">build_instances.py · data.py</text>
+<text x="928" y="202" font-size="20.5" fill="#1E1E1E">one entity graph per question:</text>
+<text x="928" y="231" font-size="20.5" fill="#1E1E1E">• nodes: table rows (&quot;Col is val ; …&quot;)</text>
+<text x="928" y="260" font-size="20.5" fill="#1E1E1E">  and linked passages (~49 / question)</text>
+<text x="928" y="289" font-size="20.5" fill="#1E1E1E">• edges: row → linked passages</text>
+<text x="928" y="318" font-size="20.5" fill="#1E1E1E">• gold paths by answer string match</text>
+<rect x="1380" y="130" width="330" height="220" rx="6" fill="#EEF0F3" stroke="#8A919C" stroke-width="2"/>
+<text x="1398" y="168" font-size="25" font-weight="700" fill="#17253F">Frozen sentence encoder</text>
+<text x="1398" y="202" font-size="20.5" fill="#1E1E1E">all-MiniLM-L6-v2 (encoder.py)</text>
+<text x="1398" y="231" font-size="20.5" fill="#1E1E1E">384-d embedding of the</text>
+<text x="1398" y="260" font-size="20.5" fill="#1E1E1E">question and every entity</text>
+<text x="1398" y="289" font-size="20.5" fill="#1E1E1E">computed once</text>
+<rect x="1780" y="130" width="310" height="220" rx="6" fill="#FFFFFF" stroke="#8A919C" stroke-width="2" stroke-dasharray="9,6"/>
+<text x="1798" y="168" font-size="25" font-weight="700" fill="#17253F">Prepared splits (.pkl)</text>
+<text x="1798" y="202" font-size="20.5" fill="#1E1E1E">train   5,000 questions</text>
+<text x="1798" y="231" font-size="20.5" fill="#1E1E1E">val     1,000 (unseen tables)</text>
+<text x="1798" y="260" font-size="20.5" fill="#1E1E1E">test    3,466 (official dev)</text>
+<text x="1798" y="289" font-size="20.5" fill="#1E1E1E">graphs + embeddings</text>
+<path d="M470,240.0 L536,240.0" fill="none" stroke="#333333" stroke-width="2.8" marker-end="url(#ar)"/>
+<path d="M840,240.0 L906,240.0" fill="none" stroke="#333333" stroke-width="2.8" marker-end="url(#ar)"/>
+<path d="M1310,240.0 L1376,240.0" fill="none" stroke="#333333" stroke-width="2.8" marker-end="url(#ar)"/>
+<path d="M1710,240.0 L1776,240.0" fill="none" stroke="#333333" stroke-width="2.8" marker-end="url(#ar)"/>
+<rect x="1700" y="510" width="390" height="220" rx="6" fill="#FFFFFF" stroke="#8A919C" stroke-width="2"/>
+<text x="1718" y="548" font-size="25" font-weight="700" fill="#17253F">Environment / MDP (env.py)</text>
+<text x="1718" y="582" font-size="20.5" fill="#1E1E1E">state s = (question, selected set,</text>
+<text x="1718" y="611" font-size="20.5" fill="#1E1E1E">  last entity); ≤ 3 hops</text>
+<text x="1718" y="640" font-size="20.5" fill="#1E1E1E">candidates ≤ 48 + STOP</text>
+<text x="1718" y="669" font-size="20.5" fill="#1E1E1E">14 base features per candidate</text>
+<text x="1718" y="698" font-size="20.5" fill="#8C1D18" font-weight="600">+ 11 bridge features, 9 state scalars</text>
+<rect x="1210" y="510" width="400" height="220" rx="6" fill="#FFFFFF" stroke="#17253F" stroke-width="3.5"/>
+<text x="1228" y="548" font-size="25" font-weight="700" fill="#17253F">Policy πθ (policy.py)</text>
+<text x="1228" y="582" font-size="20.5" fill="#1E1E1E">pointer-network actor, 0.97 M</text>
+<text x="1228" y="611" font-size="20.5" fill="#1E1E1E">state MLP + candidate MLP (256)</text>
+<text x="1228" y="640" font-size="20.5" fill="#1E1E1E">one score per candidate + STOP</text>
+<text x="1228" y="669" font-size="20.5" fill="#8C1D18" font-weight="600">COMMIT head: 5 · reader score</text>
+<text x="1228" y="698" font-size="20.5" fill="#8C1D18" font-weight="600">  + learned correction</text>
+<rect x="700" y="510" width="380" height="220" rx="6" fill="#FFFFFF" stroke="#8A919C" stroke-width="2"/>
+<text x="718" y="548" font-size="25" font-weight="700" fill="#17253F">Batched rollouts (rollout.py)</text>
+<text x="718" y="582" font-size="20.5" fill="#1E1E1E">1,024 episodes in lock-step</text>
+<text x="718" y="611" font-size="20.5" fill="#1E1E1E">sample aₜ ~ πθ(· | sₜ)</text>
+<text x="718" y="640" font-size="20.5" fill="#1E1E1E">store sₜ, aₜ, log πθ</text>
+<text x="718" y="669" font-size="20.5" fill="#1E1E1E">STOP → COMMIT → answer ŷ</text>
+<rect x="170" y="510" width="390" height="220" rx="6" fill="#FFFFFF" stroke="#8A919C" stroke-width="2"/>
+<text x="188" y="548" font-size="25" font-weight="700" fill="#17253F">Reward</text>
+<text x="188" y="582" font-size="20.5" fill="#1E1E1E">F1(ŷ, gold answer)</text>
+<text x="188" y="611" font-size="20.5" fill="#1E1E1E">− 0.02 per entity read</text>
+<text x="188" y="640" font-size="20.5" fill="#1E1E1E">+ potential shaping κ·recall</text>
+<text x="188" y="669" font-size="20.5" fill="#1E1E1E">(telescopes to 0: optimal</text>
+<text x="188" y="698" font-size="20.5" fill="#1E1E1E"> policy unchanged)</text>
+<rect x="170" y="840" width="390" height="220" rx="6" fill="#FFFFFF" stroke="#8A919C" stroke-width="2"/>
+<text x="188" y="878" font-size="25" font-weight="700" fill="#17253F">Validation &amp; checkpoint</text>
+<text x="188" y="912" font-size="20.5" fill="#1E1E1E">every 5 iterations:</text>
+<text x="188" y="941" font-size="20.5" fill="#1E1E1E">greedy F1 on 1,000 val questions</text>
+<text x="188" y="970" font-size="20.5" fill="#1E1E1E">keep best → actor_best.pt</text>
+<text x="188" y="999" font-size="20.5" fill="#1E1E1E">40 / 100 iterations · 3 seeds</text>
+<rect x="700" y="840" width="380" height="220" rx="6" fill="#FFFFFF" stroke="#17253F" stroke-width="3.5"/>
+<text x="718" y="878" font-size="25" font-weight="700" fill="#17253F">Critic Vφ + GAE</text>
+<text x="718" y="912" font-size="20.5" fill="#1E1E1E">separate value network</text>
+<text x="718" y="941" font-size="20.5" fill="#1E1E1E">advantages Âₜ (λ = 0.95)</text>
+<text x="718" y="970" font-size="20.5" fill="#1E1E1E">return targets Ĝₜ</text>
+<text x="718" y="999" font-size="20.5" fill="#1E1E1E">(rl/algos.py)</text>
+<rect x="1210" y="840" width="400" height="220" rx="6" fill="#FFFFFF" stroke="#8A919C" stroke-width="2"/>
+<text x="1228" y="878" font-size="25" font-weight="700" fill="#17253F">PPO update (rl/algos.py)</text>
+<text x="1228" y="912" font-size="20.5" fill="#1E1E1E">clipped ratio, ε = 0.2</text>
+<text x="1228" y="941" font-size="20.5" fill="#1E1E1E">entropy bonus 0.01</text>
+<text x="1228" y="970" font-size="20.5" fill="#1E1E1E">4 epochs × minibatch 256, Adam</text>
+<text x="1228" y="999" font-size="20.5" fill="#1E1E1E">early stop if KL &gt; 0.03</text>
+<rect x="1700" y="840" width="390" height="220" rx="6" fill="#EEF0F3" stroke="#8A919C" stroke-width="2"/>
+<text x="1718" y="878" font-size="25" font-weight="700" fill="#17253F">Frozen reader R (reader.py)</text>
+<text x="1718" y="912" font-size="20.5" fill="#1E1E1E">MiniLM fine-tuned on SQuAD 2.0</text>
+<text x="1718" y="941" font-size="20.5" fill="#1E1E1E">reads one entity → span + score</text>
+<text x="1718" y="970" font-size="20.5" fill="#1E1E1E">ReaderCache: every (question,</text>
+<text x="1718" y="999" font-size="20.5" fill="#1E1E1E">entity) read stored on disk</text>
+<path d="M1935,350 L1935,506" fill="none" stroke="#333333" stroke-width="2.8" marker-end="url(#ar)"/>
+<text x="1950" y="470" font-size="19" text-anchor="start" fill="#333333">graphs + embeddings</text>
+<path d="M1700,590 L1614,590" fill="none" stroke="#333333" stroke-width="2.8" marker-end="url(#ar)"/>
+<text x="1657" y="576" font-size="19" text-anchor="middle" fill="#333333">state sₜ</text>
+<path d="M1210,590 L1084,590" fill="none" stroke="#333333" stroke-width="2.8" marker-end="url(#ar)"/>
+<text x="1147" y="576" font-size="19" text-anchor="middle" fill="#333333">πθ(a | s)</text>
+<path d="M700,620 L564,620" fill="none" stroke="#333333" stroke-width="2.8" marker-end="url(#ar)"/>
+<text x="632" y="606" font-size="19" text-anchor="middle" fill="#333333">episodes</text>
+<path d="M890,510 L890,470 L1800,470 L1800,506" fill="none" stroke="#333333" stroke-width="2.8" marker-end="url(#ar)"/>
+<text x="1345" y="460" font-size="19" text-anchor="middle" fill="#333333">env.step(aₜ) for every episode</text>
+<path d="M1790,730 L1790,836" fill="none" stroke="#333333" stroke-width="2.8" marker-end="url(#ar)"/>
+<text x="1778" y="800" font-size="19" text-anchor="end" fill="#333333">selected entity</text>
+<path d="M2010,840 L2010,734" fill="none" stroke="#8C1D18" stroke-width="3.5" marker-end="url(#arR)"/>
+<text x="1900" y="790" font-size="19" text-anchor="middle" fill="#8C1D18" font-weight="600">bridge span</text>
+<text x="1900" y="814" font-size="19" text-anchor="middle" fill="#8C1D18" font-weight="600">(ours)</text>
+<path d="M365,730 L365,785 L890,785 L890,836" fill="none" stroke="#333333" stroke-width="2.8" marker-end="url(#ar)"/>
+<text x="600" y="775" font-size="19" text-anchor="middle" fill="#333333">rewards rₜ</text>
+<path d="M1080,950 L1206,950" fill="none" stroke="#333333" stroke-width="2.8" marker-end="url(#ar)"/>
+<text x="1143" y="936" font-size="19" text-anchor="middle" fill="#333333">Âₜ, Ĝₜ</text>
+<path d="M1410,840 L1410,734" fill="none" stroke="#333333" stroke-width="2.8" marker-end="url(#ar)"/>
+<text x="1424" y="800" font-size="19" text-anchor="start" fill="#333333">update θ, φ</text>
+<path d="M1410,1060 L1410,1085 L365,1085 L365,1064" fill="none" stroke="#333333" stroke-width="2.8" marker-end="url(#ar)"/>
+<text x="890" y="1077" font-size="19" text-anchor="middle" fill="#333333">next iteration / evaluate</text>
+<rect x="170" y="1190" width="300" height="230" rx="6" fill="#FFFFFF" stroke="#8A919C" stroke-width="2" stroke-dasharray="9,6"/>
+<text x="188" y="1228" font-size="25" font-weight="700" fill="#17253F">Test question</text>
+<text x="188" y="1262" font-size="20.5" fill="#1E1E1E">question + its entity</text>
+<text x="188" y="1291" font-size="20.5" fill="#1E1E1E">graph and embeddings</text>
+<text x="188" y="1320" font-size="20.5" fill="#1E1E1E">(e.g. dev #2: “position 4</text>
+<text x="188" y="1349" font-size="20.5" fill="#1E1E1E">… what nationality?”)</text>
+<rect x="540" y="1190" width="380" height="230" rx="6" fill="#FFFFFF" stroke="#17253F" stroke-width="3.5"/>
+<text x="558" y="1228" font-size="25" font-weight="700" fill="#17253F">Trained policy (greedy)</text>
+<text x="558" y="1262" font-size="20.5" fill="#1E1E1E">actor_best.pt</text>
+<text x="558" y="1291" font-size="20.5" fill="#1E1E1E">aₜ = argmax πθ(a | sₜ)</text>
+<text x="558" y="1320" font-size="20.5" fill="#1E1E1E">up to 3 hops, then STOP</text>
+<rect x="990" y="1190" width="330" height="230" rx="6" fill="#EEF0F3" stroke="#8A919C" stroke-width="2"/>
+<text x="1008" y="1228" font-size="25" font-weight="700" fill="#17253F">Frozen reader R</text>
+<text x="1008" y="1262" font-size="20.5" fill="#1E1E1E">reads each chosen entity</text>
+<text x="1008" y="1291" font-size="20.5" fill="#8C1D18" font-weight="600">span fed back (bridge)</text>
+<text x="1008" y="1320" font-size="20.5" fill="#1E1E1E">live on GPU or from cache</text>
+<rect x="1390" y="1190" width="300" height="230" rx="6" fill="#FFFFFF" stroke="#8C1D18" stroke-width="3.5"/>
+<text x="1408" y="1228" font-size="25" font-weight="700" fill="#8C1D18">COMMIT (ours)</text>
+<text x="1408" y="1262" font-size="20.5" fill="#1E1E1E">chooses which selected</text>
+<text x="1408" y="1291" font-size="20.5" fill="#1E1E1E">entity&#x27;s span is the</text>
+<text x="1408" y="1320" font-size="20.5" fill="#1E1E1E">final answer ŷ</text>
+<rect x="1760" y="1190" width="330" height="230" rx="6" fill="#FFFFFF" stroke="#8A919C" stroke-width="2"/>
+<text x="1778" y="1228" font-size="25" font-weight="700" fill="#17253F">Outputs</text>
+<text x="1778" y="1262" font-size="20.5" fill="#1E1E1E">scripts/eval/demo.py: hop-by-hop</text>
+<text x="1778" y="1291" font-size="20.5" fill="#1E1E1E">  trace of one question</text>
+<text x="1778" y="1320" font-size="20.5" fill="#1E1E1E">scripts/eval/evaluate.py: EM / F1</text>
+<text x="1778" y="1349" font-size="20.5" fill="#1E1E1E">  on 3,466 questions</text>
+<text x="1778" y="1378" font-size="20.5" fill="#1E1E1E">loop_report.py: tables, tests</text>
+<path d="M470,1305 L536,1305" fill="none" stroke="#333333" stroke-width="2.8" marker-end="url(#ar)"/>
+<path d="M920,1275 L986,1275" fill="none" stroke="#333333" stroke-width="2.8" marker-end="url(#ar)"/>
+<text x="953" y="1262" font-size="19" text-anchor="middle" fill="#333333">entity</text>
+<path d="M990,1340 L924,1340" fill="none" stroke="#8C1D18" stroke-width="2.8" marker-end="url(#arR)"/>
+<text x="957" y="1368" font-size="19" text-anchor="middle" fill="#8C1D18" font-weight="600">span</text>
+<path d="M1320,1305 L1386,1305" fill="none" stroke="#333333" stroke-width="2.8" marker-end="url(#ar)"/>
+<path d="M1690,1305 L1756,1305" fill="none" stroke="#333333" stroke-width="2.8" marker-end="url(#ar)"/>
+<text x="1723" y="1292" font-size="19" text-anchor="middle" fill="#333333">ŷ</text>
+<path d="M250,1060 L250,1150 L730,1150 L730,1186" fill="none" stroke="#333333" stroke-width="2.8" marker-end="url(#ar)"/>
+<text x="490" y="1140" font-size="19" text-anchor="middle" fill="#333333">actor_best.pt</text>
+<rect x="170" y="1515" width="46" height="30" rx="4" fill="#FFFFFF" stroke="#17253F" stroke-width="3.5"/>
+<text x="228" y="1537" font-size="20" fill="#1E1E1E">learned (trained by PPO)</text>
+<rect x="508" y="1515" width="46" height="30" rx="4" fill="#EEF0F3" stroke="#8A919C" stroke-width="2"/>
+<text x="566" y="1537" font-size="20" fill="#1E1E1E">frozen model (never trained)</text>
+<rect x="886" y="1515" width="46" height="30" rx="4" fill="#FFFFFF" stroke="#8C1D18" stroke-width="3.5"/>
+<text x="944" y="1537" font-size="20" fill="#1E1E1E">this project&#x27;s contribution</text>
+<rect x="1254" y="1515" width="46" height="30" rx="4" fill="#FFFFFF" stroke="#8A919C" stroke-width="2"/>
+<text x="1312" y="1537" font-size="20" fill="#1E1E1E">code / computation</text>
+<rect x="1532" y="1515" width="46" height="30" rx="4" fill="#FFFFFF" stroke="#8A919C" stroke-width="2" stroke-dasharray="7,5"/>
+<text x="1590" y="1537" font-size="20" fill="#1E1E1E">data</text>
+<line x1="1670" y1="1530" x2="1720" y2="1530" stroke="#8C1D18" stroke-width="3.5" marker-end="url(#arR)"/>
+<text x="1732" y="1537" font-size="20" fill="#1E1E1E">reader output fed back into the state (ours)</text></svg>

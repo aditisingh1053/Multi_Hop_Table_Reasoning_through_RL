@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Reader-in-the-Loop PPO for Multi-Hop Table QA</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<style>
+@page { size: 1920px 1080px; margin: 0; }
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: #6b6b6b; }
+section {
+  width: 1920px; height: 1080px; position: relative; overflow: hidden; background: #FFFFFF;
+  color: #1E1E1E; font-family: 'Source Sans 3', Arial, sans-serif; font-size: 32px; line-height: 1.4;
+  padding: 84px 120px 120px; break-after: page; page-break-after: always; margin: 0 auto 24px auto;
+}
+@media print { html, body { background: none; } section { margin: 0; } }
+h1, h2, h3, p, ul, ol { margin: 0; }
+h2 { font-family: 'Source Serif 4', Georgia, serif; font-size: 54px; font-weight: 600; color: #17253F;
+     line-height: 1.15; margin-bottom: 44px; }
+h3 { font-size: 32px; font-weight: 700; color: #17253F; margin-bottom: 14px; }
+ul, ol { padding-left: 1.15em; }
+li { margin-bottom: 14px; }
+li::marker { color: #6A7383; }
+b { font-weight: 700; }
+.muted { color: #5C6370; }
+.small { font-size: 28px; }
+.ours { color: #8C1D18; font-weight: 700; }
+.cite { color: #5C6370; font-size: 0.82em; }
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 72px; }
+.cols-wide { display: grid; grid-template-columns: 1.25fr 1fr; gap: 64px; }
+.cols-fig { display: grid; grid-template-columns: 1.55fr 1fr; gap: 56px; align-items: start; }
+.cap { font-size: 24px; color: #4A505A; margin-top: 12px; line-height: 1.35; }
+.cap b { color: #1E1E1E; }
+figure { margin: 0; }
+figure img { width: 100%; display: block; }
+table.t { border-collapse: collapse; width: 100%; font-size: 28px; }
+table.t th, table.t td { padding: 7px 14px; text-align: left; vertical-align: top; }
+table.t thead th { border-top: 2.5px solid #222; border-bottom: 1.5px solid #222; font-weight: 700; }
+table.t tbody tr:last-child td { border-bottom: 2.5px solid #222; }
+table.t td.n, table.t th.n { text-align: right; font-variant-numeric: tabular-nums; }
+table.t tr.hl td { background: #F6ECEB; }
+table.t tr.sep td { border-top: 1px solid #BBB; }
+.eq { margin: 12px 0 8px; font-size: 32px; }
+.eq .katex-display { margin: 0.35em 0; }
+.where { font-size: 27px; color: #3C424C; line-height: 1.4; }
+.where p { margin-bottom: 4px; }
+.box { border: 1.5px solid #C9CED6; padding: 26px 30px; }
+.foot { position: absolute; left: 120px; right: 120px; bottom: 40px; display: flex; justify-content: space-between;
+        font-size: 20px; color: #7A808A; }
+.backup-tag { color: #8C1D18; font-weight: 600; }
+aside { display: none; }
+.katex { font-size: 1.05em; }
+</style>
+</head>
+<body>
+
+<!-- ============================ 1. TITLE ============================ -->
+<section class="title-slide" style="display:flex;flex-direction:column;justify-content:center;padding:120px 160px">
+  <p style="font-size:28px;color:#5C6370;margin-bottom:36px">CS769 · Optimization in Machine Learning · Final project presentation</p>
+  <h1 style="font-family:'Source Serif 4',Georgia,serif;font-size:76px;font-weight:600;line-height:1.12;color:#17253F;max-width:1500px">
+    Learning to Read in the Right Order:<br>Reader-in-the-Loop PPO for Multi-Hop Question Answering over Tables and Text</h1>
+  <div style="margin-top:72px;font-size:32px;line-height:1.55">
+    <p><b>Aakash Gupta</b> (23B0953) &nbsp;·&nbsp; <b>Aditi Singh</b> (23B1053)</p>
+    <p class="muted">Teaching assistant: Jahanvi Rajput</p>
+    <p class="muted">Department of Computer Science and Engineering, IIT Bombay &nbsp;·&nbsp; November 2026</p>
+  </div>
+  <aside>Good morning. We are Aakash Gupta and Aditi Singh. Our project is about multi-hop question answering over Wikipedia tables and the passages linked from them. A system has to decide what evidence to read next and when to stop. We learn that decision with reinforcement learning, and our main contribution is a method we call Reader-in-the-Loop PPO.</aside>
+</section>
+
+<!-- ============================ 2. OUTLINE ============================ -->
+<section>
+  <h2>Outline</h2>
+  <div class="cols">
+    <ol style="font-size:32px;line-height:1.5">
+      <li>Introduction and problem statement</li>
+      <li>Data: HybridQA as an entity graph</li>
+      <li>Approach: MDP, policy network, PPO training</li>
+      <li>Why plain PPO saturates</li>
+      <li><span class="ours">Our method:</span> bridge feedback and learned COMMIT</li>
+      <li>Experiments and results</li>
+      <li>Conclusion and key findings</li>
+    </ol>
+    <div class="box small" style="align-self:start">
+      <h3 style="font-size:28px">How to read these slides</h3>
+      <p style="margin-bottom:10px">Contributions of this project are marked <span class="ours">ours</span>.</p>
+      <p style="margin-bottom:10px">Methods taken from prior work carry a reference number, e.g. PPO <span class="cite">[2]</span>.</p>
+      <p>All numbers are means over 3 training seeds on the full HybridQA dev set (3,466 questions), unless stated otherwise.</p>
+    </div>
+  </div>
+  <aside>The talk follows this order. Our own contributions are marked "ours"; everything taken from a paper has a reference number, and the full list is at the end.</aside>
+</section>
+
+<!-- ============================ 3. INTRODUCTION ============================ -->
+<section>
+  <h2>Introduction: questions that need a table <i>and</i> a passage</h2>
+  <p style="margin-bottom:26px"><b>Question:</b> “The driver who finished in position 4 in the 2004 United States Grand Prix was of what nationality?” &nbsp;<span class="muted">Answer: British</span></p>
+  <figure>
+    <div style="display:grid;grid-template-columns:1000px 120px 1fr;align-items:center">
+      <table class="t">
+        <thead><tr><th>Pos</th><th>No</th><th>Driver</th><th>Constructor</th><th>Time</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>2</td><td><u>Rubens Barrichello</u></td><td>Ferrari</td><td>1:10.223</td></tr>
+          <tr><td>2</td><td>1</td><td><u>Michael Schumacher</u></td><td>Ferrari</td><td>1:10.400</td></tr>
+          <tr><td>3</td><td>10</td><td><u>Takuma Sato</u></td><td>BAR - Honda</td><td>1:10.601</td></tr>
+          <tr class="hl"><td><b>4</b></td><td>9</td><td><u><b>Jenson Button</b></u></td><td>BAR - Honda</td><td>1:10.820</td></tr>
+          <tr><td>5</td><td>3</td><td><u>Juan Pablo Montoya</u></td><td>Williams - BMW</td><td>1:11.062</td></tr>
+        </tbody>
+      </table>
+      <svg width="120" height="80" viewBox="0 0 120 80"><line x1="8" y1="40" x2="96" y2="40" stroke="#8C1D18" stroke-width="4"/><polygon points="96,26 116,40 96,54" fill="#8C1D18"/><text x="52" y="22" text-anchor="middle" font-size="20" fill="#8C1D18" font-family="Source Sans 3">link</text></svg>
+      <div class="box" style="font-size:24px;line-height:1.45">
+        <b>Jenson Button</b> (linked passage)<br>
+        “Jenson Alexander Lyons Button MBE (born 19 January 1980) is a <span style="background:#F6ECEB;font-weight:700">British</span> racing driver and former Formula One driver …”
+      </div>
+    </div>
+    <p class="cap"><b>Figure 1.</b> A HybridQA example (dev question #2). Hop 1: find the row with Pos = 4 in the table. Hop 2: follow the hyperlink in the Driver cell to the passage. The answer is only in the passage; the passage is only found through the table.</p>
+  </figure>
+  <ul style="margin-top:28px;font-size:28px">
+    <li>Each hop is a decision about <b>what to read next</b>; a wrong first hop cannot be repaired by a good reader.</li>
+  </ul>
+  <aside>Here is a real example from the dataset. To answer it you first find the row where the position is 4, which gives Jenson Button, then follow the link from his name to his Wikipedia passage, which says he is British. The answer is only in the passage, and you only find the right passage through the table. So each step is a decision about what to read next.</aside>
+</section>
+
+<!-- ============================ 4. PROBLEM STATEMENT ============================ -->
+<section>
+  <h2>Problem statement</h2>
+  <div class="cols-wide">
+    <div>
+      <h3>Task</h3>
+      <p style="margin-bottom:22px">Given a question \(q\) and the entities \(\mathcal V\) of its table (rows and linked passages), choose an ordered set of at most \(H = 3\) entities, and decide when to stop, so that a <b>fixed</b> extractive reader answers \(q\) correctly from the chosen evidence.</p>
+      <h3>Why it is hard</h3>
+      <ul>
+        <li>About 49 entities per question; the right passage is only reachable through the right row.</li>
+        <li>Gold evidence is noisy: traced by string matching, unique for only 56% of questions.</li>
+        <li>The only reliable signal is whether the <b>final answer</b> is correct: delayed and sparse.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>What existing systems do</h3>
+      <p style="margin-bottom:12px">Evidence is chosen by a <b>fixed rule</b>: a greedy classifier (HYBRIDER <span class="cite">[1]</span>), embedding similarity (TableRAG <span class="cite">[23]</span>), or an LLM prompt (Chain-of-Table <span class="cite">[22]</span>). None learns the choice from answer quality.</p>
+      <p style="margin-bottom:26px">The only RL controller for table + text QA <span class="cite">[18]</span> chose between whole tables and texts and did no better than a fixed rule.</p>
+      <div class="box">
+        <h3 style="font-size:28px">Goal of this project</h3>
+        <p style="font-size:27px">Learn <b>which entity to read next</b> and <b>when to stop</b> directly from the reader's answer F1, with reinforcement learning.</p>
+      </div>
+    </div>
+  </div>
+  <aside>Formally: given a question and the entities of its table, choose at most three entities in order and decide when to stop, so that a fixed reader model answers correctly. It is hard because there are about 49 entities, the gold evidence annotations are noisy, and the only reliable signal is whether the final answer was right. Existing systems pick evidence with fixed rules, and the one RL approach for this setting worked at the level of whole tables and did not beat a fixed rule. Our goal is to learn the selection and the stopping decision from answer quality.</aside>
+</section>
+
+<!-- ============================ 5. DATA ============================ -->
+<section>
+  <h2>Data: HybridQA as a per-question entity graph</h2>
+  <div class="cols-fig">
+    <div>
+      <table class="t">
+        <thead><tr><th></th><th class="n">Train</th><th class="n">Validation</th><th class="n">Test (dev)</th></tr></thead>
+        <tbody>
+          <tr><td>Questions</td><td class="n">5,000</td><td class="n">1,000</td><td class="n">3,466</td></tr>
+          <tr><td>Distinct tables</td><td class="n">1,000</td><td class="n">201</td><td class="n">3,053</td></tr>
+          <tr><td>Rows per table</td><td class="n">15.8</td><td class="n">16.4</td><td class="n">15.9</td></tr>
+          <tr><td>Linked passages per table</td><td class="n">33.2</td><td class="n">33.8</td><td class="n">33.2</td></tr>
+          <tr><td>Entities (nodes) per question</td><td class="n">49.0</td><td class="n">50.2</td><td class="n">49.0</td></tr>
+          <tr><td>Candidates at the first step</td><td class="n">20.8</td><td class="n">21.4</td><td class="n">20.9</td></tr>
+          <tr><td>Exactly one gold path (%)</td><td class="n">54.9</td><td class="n">55.6</td><td class="n">55.9</td></tr>
+          <tr><td>Answer string in some entity (%)</td><td class="n">99.6</td><td class="n">99.7</td><td class="n">97.1</td></tr>
+        </tbody>
+      </table>
+      <p class="cap"><b>Table 1.</b> Statistics of the entity graphs we build. Train and validation use disjoint training tables; test is the full official dev set (its answers are public; the official test answers are not).</p>
+    </div>
+    <div>
+      <h3>HybridQA <span class="cite">[1]</span></h3>
+      <ul class="small">
+        <li>Wikipedia tables whose cells hyperlink to Wikipedia passages; ~70k questions that need both.</li>
+      </ul>
+      <h3 style="margin-top:22px">Our graph construction</h3>
+      <ul class="small">
+        <li><b>Nodes:</b> one per table row (linearised as “Column is value ; …”) and one per linked passage.</li>
+        <li><b>Edges:</b> row → passages linked from its cells.</li>
+        <li>All node texts embedded <b>once</b> with a frozen sentence encoder (all-MiniLM-L6-v2 <span class="cite">[13]</span>).</li>
+        <li>Gold paths traced by answer string matching; used only for evaluation diagnostics and an optional shaping term.</li>
+      </ul>
+    </div>
+  </div>
+  <aside>We use HybridQA, Wikipedia tables whose cells link to passages. For each question we build a graph: one node per table row, written as "column is value", and one per linked passage, with edges from a row to the passages its cells link to. That is about 49 entities per question. Everything is embedded once with a frozen MiniLM sentence encoder. We train on 5,000 questions, choose checkpoints on 1,000 questions from different tables, and test on the full official dev set of 3,466 questions.</aside>
+</section>
+
+<!-- ============================ 6. PIPELINE ============================ -->
+<section>
+  <h2>Proposed approach: the pipeline</h2>
+  <figure>
+    <svg width="1680" height="560" viewBox="0 0 1680 560" font-family="Source Sans 3, Arial" font-size="25">
+      <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#333"/></marker>
+            <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8C1D18"/></marker></defs>
+      <!-- boxes -->
+      <rect x="0" y="150" width="250" height="130" fill="#F2F4F7" stroke="#8A919C" stroke-width="2"/>
+      <text x="125" y="200" text-anchor="middle" font-weight="700">Question q +</text><text x="125" y="232" text-anchor="middle">table + linked</text><text x="125" y="262" text-anchor="middle">passages</text>
+      <rect x="320" y="150" width="260" height="130" fill="#F2F4F7" stroke="#8A919C" stroke-width="2"/>
+      <text x="450" y="200" text-anchor="middle" font-weight="700">Entity graph</text><text x="450" y="232" text-anchor="middle">rows + passages,</text><text x="450" y="262" text-anchor="middle">frozen encoder</text>
+      <rect x="660" y="150" width="300" height="130" fill="#FFFFFF" stroke="#17253F" stroke-width="3"/>
+      <text x="810" y="200" text-anchor="middle" font-weight="700">Policy π<tspan font-size="18" dy="6">θ</tspan></text><text x="810" y="238" text-anchor="middle">select an entity</text><text x="810" y="266" text-anchor="middle">or STOP</text>
+      <rect x="660" y="400" width="300" height="120" fill="#F2F4F7" stroke="#8A919C" stroke-width="2"/>
+      <text x="810" y="448" text-anchor="middle" font-weight="700">Frozen reader R</text><text x="810" y="482" text-anchor="middle">extracts a span from</text><text x="810" y="508" text-anchor="middle">the chosen entity</text>
+      <rect x="1050" y="150" width="270" height="130" fill="#FFFFFF" stroke="#8C1D18" stroke-width="3"/>
+      <text x="1185" y="200" text-anchor="middle" font-weight="700" fill="#8C1D18">COMMIT (ours)</text><text x="1185" y="236" text-anchor="middle">pick which entity's</text><text x="1185" y="264" text-anchor="middle">span is the answer</text>
+      <rect x="1410" y="150" width="270" height="130" fill="#F2F4F7" stroke="#8A919C" stroke-width="2"/>
+      <text x="1545" y="200" text-anchor="middle" font-weight="700">Answer ŷ</text><text x="1545" y="236" text-anchor="middle">reward: F1(ŷ, y*)</text><text x="1545" y="264" text-anchor="middle">− cost per entity</text>
+      <!-- arrows -->
+      <line x1="250" y1="215" x2="316" y2="215" stroke="#333" stroke-width="3" marker-end="url(#ar)"/>
+      <line x1="580" y1="215" x2="656" y2="215" stroke="#333" stroke-width="3" marker-end="url(#ar)"/>
+      <line x1="960" y1="215" x2="1046" y2="215" stroke="#333" stroke-width="3" marker-end="url(#ar)"/>
+      <text x="1003" y="200" text-anchor="middle" font-size="20" fill="#333">STOP</text>
+      <line x1="1320" y1="215" x2="1406" y2="215" stroke="#333" stroke-width="3" marker-end="url(#ar)"/>
+      <!-- loop -->
+      <line x1="760" y1="280" x2="760" y2="396" stroke="#333" stroke-width="3" marker-end="url(#ar)"/>
+      <text x="748" y="345" text-anchor="end" font-size="22">chosen entity</text>
+      <line x1="860" y1="400" x2="860" y2="284" stroke="#8C1D18" stroke-width="3" marker-end="url(#arr)"/>
+      <text x="874" y="330" font-size="22" fill="#8C1D18" font-weight="700">bridge feedback (ours):</text>
+      <text x="874" y="358" font-size="22" fill="#8C1D18">reader span enters the next state</text>
+      <!-- training loop -->
+      <path d="M1545,150 L1545,60 L810,60 L810,146" fill="none" stroke="#333" stroke-width="2.5" stroke-dasharray="10,8" marker-end="url(#ar)"/>
+      <text x="1180" y="48" text-anchor="middle" font-size="22">training only: PPO update of π<tspan font-size="16" dy="5">θ</tspan><tspan dy="-5"> from the reward</tspan></text>
+      <text x="810" y="320" text-anchor="middle" font-size="20" fill="#5C6370"></text>
+    </svg>
+    <p class="cap"><b>Figure 2.</b> Pipeline at inference and training time. The encoder and reader are frozen; only the policy \(\pi_\theta\) (and, during training, its critic) is learned. Up to \(H = 3\) select–read cycles run before STOP. Red parts are this project's contributions; the black loop is the baseline system.</p>
+  </figure>
+  <ul class="small" style="margin-top:16px">
+    <li>Reader R: MiniLM fine-tuned on SQuAD 2.0 <span class="cite">[14, 15]</span>, frozen; its outputs are cached per (question, entity), so training is affordable on a laptop GPU.</li>
+  </ul>
+  <aside>This is the whole pipeline. The question and its table become the entity graph. The policy picks an entity or STOP. The frozen reader reads the chosen entity. In our method, the red parts, the reader's answer is fed back into the policy's next state, and after STOP a COMMIT step chooses which entity's answer is final. The answer is scored with F1 against the gold answer, and during training that score is the reward for a PPO update. Only the policy is trained; encoder and reader stay fixed.</aside>
+</section>
+
+<!-- ============================ 7. MDP ============================ -->
+<section>
+  <h2>Methodology (1/3): evidence selection as an MDP</h2>
+  <div class="cols">
+    <div>
+      <div class="eq">$$ s_t = \big(q,\; E_t,\; e_{t}^{\text{last}}\big), \qquad E_t \subseteq \mathcal V,\; |E_t| = t \le H \tag{1} $$</div>
+      <div class="eq">$$ \mathcal A(s_t) = \big(\mathcal R \,\cup\, \mathcal P_5(q) \,\cup\, \mathcal N(E_t)\big)\setminus E_t \;\cup\; \{\textsf{STOP}\} \tag{2} $$</div>
+      <div class="eq">$$ \begin{aligned} r_t = {} & -c\,\mathbb 1[a_t \ne \textsf{STOP}] + \gamma\,\Phi(s_{t+1}) - \Phi(s_t) \\ & + \mathbb 1[t = T]\;\mathrm{F1}(\hat y, y^\star) \end{aligned} \tag{3} $$</div>
+      <div class="eq">$$ \Phi(s_t) = \kappa \cdot \mathrm{recall}(E_t, \mathcal G), \qquad \Phi(s_T) = 0 \tag{4} $$</div>
+    </div>
+    <div class="where">
+      <p><b>where</b></p>
+      <p>\(q\): question; \(\mathcal V\): all entities of its graph; \(E_t\): entities selected after \(t\) steps; \(e_t^{\text{last}}\): the last one selected.</p>
+      <p>\(H = 3\): horizon (maximum number of entities).</p>
+      <p>\(\mathcal R\): all rows; \(\mathcal P_5(q)\): the 5 passages most similar to \(q\); \(\mathcal N(E_t)\): passages linked from selected rows. At most \(K = 48\) candidates.</p>
+      <p>\(c = 0.02\): cost per entity read; \(T\): last step of the episode.</p>
+      <p>\(\hat y\): the answer the reader extracts from the chosen evidence; \(y^\star\): gold answer; F1: token-overlap F1 between them.</p>
+      <p>\(\Phi\): shaping potential; \(\mathcal G\): gold evidence entities; \(\kappa = 0.5\); \(\gamma = 1\): discount.</p>
+      <p style="margin-top:14px">Shaping of the form \(\gamma\Phi(s') - \Phi(s)\) leaves the optimal policy unchanged <span class="cite">[4]</span>: with \(\Phi(s_T)=0\) the terms sum to \(-\Phi(s_0)=0\) over an episode.</p>
+    </div>
+  </div>
+  <aside>Here is the MDP. The state is the question, the entities selected so far, and the last one selected. The actions, equation 2, are any table row, the five passages most similar to the question, passages linked from rows we already picked, or STOP. The reward, equation 3, is the reader's F1 at the end, minus a small cost of 0.02 per entity, plus a shaping term. The shaping, equation 4, gives credit for collecting gold evidence; because it has the potential-based form of Ng et al., it provably does not change which policy is optimal: over an episode the terms telescope to zero.</aside>
+</section>
+
+<!-- ============================ 8. POLICY ============================ -->
+<section>
+  <h2>Methodology (2/3): pointer-network policy and critic</h2>
+  <div class="cols">
+    <div>
+      <div class="eq">$$ h = f_s(s_t), \qquad g_a = f_c\big([\mathbf e_a ;\, \mathbf x_a]\big) \tag{5} $$</div>
+      <div class="eq">$$ \ell(a) = \mathbf w^\top \mathrm{ReLU}\big(W\,[h ;\, g_a ;\, h \odot g_a]\big) \tag{6} $$</div>
+      <div class="eq">$$ \pi_\theta(a \mid s_t) = \frac{\exp \ell(a)}{\sum_{a' \in \mathcal A(s_t)} \exp \ell(a')} \tag{7} $$</div>
+      <div class="eq">$$ V_\phi(s_t) = f_v\big([h' ;\; \mathrm{mean}_a\, g'_a ;\; \mathrm{max}_a\, g'_a]\big) \tag{8} $$</div>
+    </div>
+    <div class="where">
+      <p><b>where</b></p>
+      <p>\(f_s, f_c, f_v\): two-layer MLPs (hidden size 256, ReLU).</p>
+      <p>\(\mathbf e_a\): frozen 384-d embedding of entity \(a\); \(\mathbf x_a\): 14 hand-made features (BM25 score, cosine to \(q\), linked to last hop, number match, …).</p>
+      <p>\(h \odot g_a\): element-wise product; \(\ell(a)\): score (logit) of candidate \(a\). STOP has its own head on \(h\) and 8 scalar state features.</p>
+      <p>\(\pi_\theta\): policy with parameters \(\theta\); invalid actions are masked (logit \(-10^9\)), not penalised.</p>
+      <p>\(V_\phi\): critic (value function) with <b>separate</b> parameters \(\phi\); primes denote its own encoders.</p>
+      <h3 style="margin-top:24px;font-size:27px">Why a pointer network <span class="cite">[24]</span></h3>
+      <p>The number of candidates changes per question and per step. Scoring each candidate with the same network gives one logit per candidate, whatever their number.</p>
+      <p style="margin-top:10px">Size: 0.97 M parameters (actor).</p>
+    </div>
+  </div>
+  <aside>The policy is a pointer network. The state goes through one small network, each candidate entity through another, using its frozen embedding and fourteen simple features such as BM25 score. Equation 6 combines them into one score per candidate, and equation 7 is a softmax over only the valid candidates, so the network works for any number of candidates. STOP has its own small head. The critic, equation 8, estimates the expected return from the state; it has its own parameters, which worked better than sharing.</aside>
+</section>
+
+<!-- ============================ 9. PPO ============================ -->
+<section>
+  <h2>Methodology (3/3): training with PPO and GAE</h2>
+  <div class="cols-wide">
+    <div>
+      <div class="eq">$$ \begin{aligned} \delta_t &= r_t + \gamma V_\phi(s_{t+1}) - V_\phi(s_t) \\ \hat A_t &= \textstyle\sum_{l \ge 0} (\gamma\lambda)^l\, \delta_{t+l} \end{aligned} \tag{9} $$</div>
+      <div class="eq">$$ \rho_t(\theta) = \frac{\pi_\theta(a_t \mid s_t)}{\pi_{\theta_{\text{old}}}(a_t \mid s_t)} \tag{10} $$</div>
+      <div class="eq">$$ \begin{aligned} L(\theta) = {} & \mathbb E_t\Big[\min\big(\rho_t \hat A_t,\; \mathrm{clip}(\rho_t, 1-\epsilon, 1+\epsilon)\,\hat A_t\big)\Big] \\ & + c_H\, \mathbb E_t\big[\mathcal H(\pi_\theta(\cdot \mid s_t))\big] \end{aligned} \tag{11} $$</div>
+      <div class="eq">$$ \begin{aligned} L_V(\phi) &= \tfrac12\, \mathbb E_t\big[(V_\phi(s_t) - \hat G_t)^2\big] \\ \hat G_t &= \hat A_t + V_\phi(s_t) \end{aligned} \tag{12} $$</div>
+    </div>
+    <div>
+      <div class="where" style="margin-bottom:22px">
+        <p><b>where</b> \(\hat A_t\): advantage (how much better the action was than the critic expected), GAE <span class="cite">[3]</span> with \(\lambda = 0.95\); \(\rho_t\): probability ratio between the new and the data-collecting policy; \(\epsilon = 0.2\): clip range; \(\mathcal H\): entropy, \(c_H = 0.01\); \(\hat G_t\): return target.</p>
+      </div>
+      <table class="t">
+        <thead><tr><th>Setting</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>Episodes per iteration</td><td>1,024</td></tr>
+          <tr><td>Iterations</td><td>40 and 100</td></tr>
+          <tr><td>Epochs × minibatch</td><td>4 × 256</td></tr>
+          <tr><td>Learning rate (actor / critic)</td><td>3·10⁻⁴ / 10⁻³ (Adam)</td></tr>
+          <tr><td>Early stop of an update</td><td>KL &gt; 0.03</td></tr>
+          <tr><td>Checkpoint selection</td><td>best validation F1 (every 5 it)</td></tr>
+        </tbody>
+      </table>
+      <p class="cap"><b>Table 2.</b> PPO <span class="cite">[2]</span> hyper-parameters, identical for all PPO runs.</p>
+    </div>
+  </div>
+  <aside>We train with PPO. First we play 1,024 episodes with the current policy. Equation 9, GAE, computes for each action an advantage: how much better it turned out than the critic predicted, blending short and long horizons. Equation 11 is the PPO objective: increase the probability of actions with positive advantage, but clip the probability ratio to 1 plus or minus 0.2 so one update cannot move the policy too far. A small entropy bonus keeps exploration. Equation 12 trains the critic. All runs share these settings.</aside>
+</section>
+
+<!-- ============================ 10. DIAGNOSIS ============================ -->
+<section>
+  <h2>Why plain PPO stops at about 28 F1</h2>
+  <div class="cols">
+    <div>
+      <table class="t">
+        <thead><tr><th>PPO, 40 iterations</th><th class="n">Score</th></tr></thead>
+        <tbody>
+          <tr><td>Answer string inside the selected evidence</td><td class="n">46.1</td></tr>
+          <tr><td>F1 if the best span among selected entities were chosen</td><td class="n">38.7</td></tr>
+          <tr class="hl"><td>F1 actually obtained (reader's max-confidence span)</td><td class="n">27.6</td></tr>
+        </tbody>
+      </table>
+      <p class="cap"><b>Table 3.</b> Error decomposition of the baseline on test. About 11 F1 points are lost after the evidence is already selected.</p>
+    </div>
+    <div>
+      <h3>Leak 1: hop 2 is chosen blind</h3>
+      <p style="margin-bottom:28px">The policy never sees what the reader found in hop 1. In Figure 1 it cannot know that the row's answer is “Jenson Button”, so it cannot follow that name: the essence of a multi-hop chain.</p>
+      <h3>Leak 2: the final answer is picked by confidence</h3>
+      <p>The reader reads every selected entity and its <b>most confident</b> span wins. The reader is most confident on the table row (“Jenson Button”), which is the wrong <i>type</i> of answer for a “nationality” question.</p>
+    </div>
+  </div>
+  <p style="margin-top:40px" class="box">Both leaks are about the <b>reader</b> being outside the decision loop. This motivates our method.</p>
+  <aside>Before our method, the diagnosis. We split the baseline's error. The answer is in the selected evidence 46 percent of the time, and choosing the best span among the selected entities would give 38.7 F1, but the reader's confidence rule gives only 27.6. So two things leak. First, the policy picks the second hop without knowing what the first hop produced, so it cannot follow the bridge name. Second, the final answer is the reader's most confident one, which is often the wrong type. Both happen because the reader is outside the decision loop.</aside>
+</section>
+
+<!-- ============================ 11. BRIDGE FEEDBACK ============================ -->
+<section>
+  <h2><span class="ours">Our method (1/2):</span> bridge feedback</h2>
+  <div class="cols">
+    <div>
+      <p style="margin-bottom:18px">After every hop the frozen reader reads the newly chosen entity; its span becomes the <b>bridge</b> \(b_t\):</p>
+      <div class="eq">$$ b_t = R\big(q,\; e_t^{\text{last}}\big) \tag{13} $$</div>
+      <p style="margin:14px 0">Each candidate \(a\) gets bridge features appended to \(\mathbf x_a\) in (5):</p>
+      <div class="eq">$$ \begin{aligned} \mathbf x_a^{\text{br}} = \big[\, & \mathbb 1[b \sqsubseteq \mathrm{text}(a)],\; \mathbb 1[b \approx \mathrm{title}(a)], \\ & \mathbb 1[b \sqsubseteq \mathrm{row}(a)] \,\big] \end{aligned} \tag{14} $$</div>
+      <div class="where">
+        <p><b>where</b> \(R(q, e)\): span the reader extracts from entity \(e\) for question \(q\); \(b\) ranges over informative bridges found so far; \(b \sqsubseteq x\): normalised \(b\) occurs in \(x\); \(b \approx \mathrm{title}(a)\): \(b\) matches the passage title.</p>
+        <p>The state also gains 9 scalars: reader confidence of the last hop, question type (who / when / number / where / other), and a COMMIT-phase flag.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Effect in Figure 1</h3>
+      <ol class="small">
+        <li>Hop 1 reads row “Pos 4”; the reader returns <b>“Jenson Button”</b>.</li>
+        <li>The passage <i>Jenson Button</i> now has \(\mathbb 1[b \approx \mathrm{title}] = 1\); the policy picks it with p = 0.86, although another passage (Barrichello) has the higher BM25 score.</li>
+      </ol>
+      <div class="box small" style="margin-top:26px">
+        <p><b>What is new.</b> The reader is used <i>inside</i> the episode as an observation, not only as the reward. Prior RL selectors for retrieval (e.g. s3 <span class="cite">[19]</span>) and for tables <span class="cite">[18, 20, 21]</span> observe only the retrieved text.</p>
+        <p style="margin-top:10px"><b>Cost.</b> No extra reads: the reward needs these reads anyway, and they are cached.</p>
+      </div>
+    </div>
+  </div>
+  <aside>Our first change, bridge feedback. After every hop we run the frozen reader on the entity just chosen; its answer is the bridge. For every remaining candidate we add features: does the bridge appear in this candidate's text, is it this passage's title, does it appear in this row. We also add the question type and the reader's confidence to the state. In the example, after the row gives "Jenson Button", the Jenson Button passage lights up as a title match, and the policy follows it even though another passage has a higher keyword score. This is our design: the reader becomes part of the observation, not just the reward, and it costs no extra reads because the reward needs them anyway.</aside>
+</section>
+
+<!-- ============================ 12. COMMIT ============================ -->
+<section>
+  <h2><span class="ours">Our method (2/2):</span> a learned COMMIT action</h2>
+  <div class="cols">
+    <div>
+      <p style="margin-bottom:16px">After STOP (if \(|E_T| &gt; 1\)) the policy takes one more action: which selected entity provides the final answer.</p>
+      <div class="eq">$$ \ell_{\text{commit}}(e) = \beta\,\tilde\sigma(e) + c_\theta\big(h, g_e\big), \qquad e \in E_T \tag{15} $$</div>
+      <div class="eq">$$ \hat y = R(q, e^\star), \qquad e^\star \sim \pi_\theta(\cdot \mid s_{\text{commit}}) \tag{16} $$</div>
+      <div class="where">
+        <p><b>where</b> \(\tilde\sigma(e)\): the reader's confidence score for its span in \(e\), clipped to \([-20, 20]\) and divided by 5; \(\beta\): learned scalar, initialised to 5; \(c_\theta\): learned correction head on the same \(h, g_e\) as (6), initialised near 0; \(e^\star\): the committed entity.</p>
+        <p style="margin-top:8px">Commit-phase features: does the span repeat question words, is it numeric, its length, does it appear in the other evidence.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Residual design</h3>
+      <p class="small" style="margin-bottom:18px">At initialisation \(\beta\tilde\sigma(e)\) equals the raw reader score and \(c_\theta \approx 0\), so COMMIT <b>starts exactly at</b> the max-confidence rule. RL only learns when to overrule the reader.</p>
+      <h3>Keeping the shaping guarantee</h3>
+      <p class="small" style="margin-bottom:18px">The extra step changes episode length. We define \(\Phi\) on the commit state as the potential of the final selection and set \(\Phi(s_T)=0\) after COMMIT, so (3)–(4) still telescope to 0 and [4] still applies.</p>
+      <div class="box small">
+        <p><b>In Figure 1:</b> reader confidences are “Jenson Button” 17.6, “Brazilian” 1.0, “British” −7.2. Max-confidence answers “Jenson Button” (F1 = 0). COMMIT picks <b>“British”</b> (p = 0.54): correct.</p>
+      </div>
+    </div>
+  </div>
+  <aside>Our second change is a learned COMMIT action. After STOP, the policy chooses which of its selected entities gives the final answer. Equation 15: the score of each choice is the reader's own confidence times a learned weight, plus a learned correction. We initialise it so that before training it is exactly the old max-confidence rule; it can only learn to improve on it. We also extended the shaping so that the guarantee from Ng et al. still holds with the extra step. In the example, the reader is most confident about "Jenson Button", but COMMIT learned that a person's name is the wrong type for a nationality question and picks "British".</aside>
+</section>
+
+<!-- ============================ 13. EXPERIMENTAL SETUP ============================ -->
+<section>
+  <h2>Experimental setup</h2>
+  <div class="cols">
+    <div>
+      <h3>Compared selectors (same frozen reader for all)</h3>
+      <ul class="small">
+        <li><b>Fixed rules:</b> BM25 top-3 <span class="cite">[17]</span>, greedy rank-then-hop (HYBRIDER-style <span class="cite">[1]</span>), bridge hop (a hand-written reader-in-the-loop rule), read every entity, oracle gold evidence.</li>
+        <li><b>Learned:</b> PPO (baseline), RiL-PPO (<span class="ours">ours</span>) and its two single-component ablations.</li>
+        <li><b>Variants from the literature</b>, added to RiL-PPO: action dropout <span class="cite">[9]</span>, self-imitation <span class="cite">[10]</span>, privileged critic <span class="cite">[11]</span>, EMA weights, Rao-Blackwellised COMMIT (<span class="ours">ours</span>); optimisers RLOO <span class="cite">[7]</span>, GRPO <span class="cite">[6]</span>, Dr. GRPO <span class="cite">[8]</span>; self-consistency voting <span class="cite">[12]</span>.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Metrics</h3>
+      <div class="eq" style="font-size:27px">$$ \mathrm{EM} = \mathbb 1[\bar y = \bar y^\star], \qquad \mathrm{F1} = \frac{2PR}{P + R} \tag{17} $$</div>
+      <p class="where" style="margin-bottom:22px">\(\bar y\): answer after lower-casing and removing punctuation and articles; \(P, R\): token precision and recall of \(\hat y\) against \(y^\star\). Both are averaged over questions, in %.</p>
+      <h3>Protocol</h3>
+      <ul class="small">
+        <li>3 seeds per learned method; mean ± std reported.</li>
+        <li>Paired bootstrap over questions (10,000 resamples) for differences.</li>
+        <li>Hardware: one RTX 3050 laptop GPU (4 GB); the full suite of 48 training runs took about 4 hours.</li>
+      </ul>
+    </div>
+  </div>
+  <aside>Every selector, fixed or learned, feeds the same frozen reader, so the only difference is the evidence chosen. Baselines include BM25 top-3, a greedy rule in the style of HYBRIDER, a hand-written bridge-following rule, reading everything, and the oracle. We also tested several ideas from the literature on top of our method, and three alternative optimisers. Metrics are the standard SQuAD exact match and token F1. We use three seeds and a paired bootstrap test. Everything ran on my laptop GPU in about four hours.</aside>
+</section>
+
+<!-- ============================ 14. MAIN RESULTS ============================ -->
+<section>
+  <h2>Results: RiL-PPO reaches 37.5 F1, +9.5 over PPO</h2>
+  <div class="cols-fig">
+    <figure>
+      <img src="fig/main_results.png" alt="Bar chart of test F1 for all selectors">
+      <p class="cap"><b>Figure 3.</b> Test F1 on 3,466 HybridQA dev questions. Error bars: std over 3 seeds (fixed rules are deterministic). Dashed line: reader given the oracle gold evidence.</p>
+    </figure>
+    <div>
+      <table class="t">
+        <thead><tr><th>Selector</th><th class="n">EM</th><th class="n">F1</th></tr></thead>
+        <tbody>
+          <tr><td>BM25 top-3</td><td class="n">15.9</td><td class="n">20.8</td></tr>
+          <tr><td>PPO, 100 it</td><td class="n">22.8</td><td class="n">28.0</td></tr>
+          <tr class="hl"><td><b>RiL-PPO, 100 it (ours)</b></td><td class="n"><b>31.0</b></td><td class="n"><b>37.5</b></td></tr>
+          <tr><td>Oracle evidence</td><td class="n">48.4</td><td class="n">55.6</td></tr>
+        </tbody>
+      </table>
+      <p class="cap"><b>Table 4.</b> Main comparison (mean of 3 seeds).</p>
+      <ul class="small" style="margin-top:22px">
+        <li><b>+9.5 F1</b> over PPO with the same budget; 95% CI [8.6, 10.6], p &lt; 0.001; every RiL-PPO seed beats every PPO seed.</li>
+        <li>+16.7 F1 over the best fixed rule; about two-thirds of the oracle.</li>
+        <li>The hand-written bridge rule reaches only 19.0: following the bridge must be <b>learned</b>.</li>
+      </ul>
+    </div>
+  </div>
+  <aside>The main result. With 100 training iterations, Reader-in-the-Loop PPO reaches 37.5 F1 and 31.0 exact match. Plain PPO with exactly the same budget gets 28.0, so the gain is 9.5 points, with a confidence interval of 8.6 to 10.6, and every one of our runs beats every PPO run. Fixed rules stay around 20. Interestingly, a hand-written rule that follows the reader's answer gets only 19, so the gain comes from learning when and how to follow the bridge.</aside>
+</section>
+
+<!-- ============================ 15. CURVES ============================ -->
+<section>
+  <h2>Results: plain PPO plateaus, RiL-PPO keeps learning</h2>
+  <div class="cols-fig">
+    <figure>
+      <img src="fig/curves.png" alt="Validation F1 against PPO iteration for PPO and RiL-PPO">
+      <p class="cap"><b>Figure 4.</b> Validation F1 (1,000 questions from unseen training tables) during training, mean over 3 seeds; shaded band: ± 1 std.</p>
+    </figure>
+    <div>
+      <h3>Reading the figure</h3>
+      <ul class="small">
+        <li>Both methods jump to about 29 F1 within 5 iterations: the easy part is shared.</li>
+        <li><b>PPO</b> then flattens: 29 → 31 validation F1 over the next 95 iterations (test: 27.6 at 40 it, 28.0 at 100 it).</li>
+        <li><b>RiL-PPO</b> keeps rising to 42.8 validation F1 (test: 29.9 → 37.5).</li>
+        <li>Interpretation: without the reader's output in the state, the policy has no further information to exploit. Bridge features give PPO a signal it can keep learning from.</li>
+        <li>The 40-iteration runs used for the ablations below have not converged; differences there are smaller.</li>
+      </ul>
+    </div>
+  </div>
+  <aside>The learning curves explain why. Both methods learn the easy part in the first five iterations. After that plain PPO is flat, because it has no new information to use. Our method keeps improving all the way to iteration 100. That is also why the gap is small at 40 iterations, 2.3 points, and large at 100, 9.5 points.</aside>
+</section>
+
+<!-- ============================ 16. DECOMPOSITION + ABLATION ============================ -->
+<section>
+  <h2>Results: where the gain comes from</h2>
+  <div class="cols-fig">
+    <figure>
+      <img src="fig/decomposition.png" alt="Grouped bars of answer recall, best-in-set F1, max-confidence F1 and final F1">
+      <p class="cap"><b>Figure 5.</b> Error decomposition on test, 100 iterations. “Best answer in the set”: F1 if an oracle chose among the selected entities. “Reader's max-confidence”: F1 of the reader's own rule on the same evidence.</p>
+    </figure>
+    <div>
+      <table class="t">
+        <thead><tr><th>40 iterations</th><th class="n">F1</th><th class="n">Δ</th></tr></thead>
+        <tbody>
+          <tr><td>PPO</td><td class="n">27.6</td><td class="n">–</td></tr>
+          <tr><td>+ bridge feedback only</td><td class="n">28.7</td><td class="n">+1.1</td></tr>
+          <tr><td>+ COMMIT only</td><td class="n">29.0</td><td class="n">+1.4</td></tr>
+          <tr class="hl"><td><b>+ both (RiL-PPO)</b></td><td class="n"><b>29.9</b></td><td class="n"><b>+2.3</b></td></tr>
+        </tbody>
+      </table>
+      <p class="cap"><b>Table 5.</b> Ablation. All differences to PPO and between the full model and each single component: p ≤ 0.008.</p>
+      <ul class="small" style="margin-top:20px">
+        <li><b>Better evidence</b> (bridge feedback): answer in evidence 45.3% → 57.4%.</li>
+        <li><b>Better choice</b> (COMMIT): +8.0 F1 over max-confidence on the same evidence; the committed answer differs from max-confidence on 34% of questions.</li>
+      </ul>
+    </div>
+  </div>
+  <aside>Where does the gain come from? Figure 5 decomposes it. Our model gets the answer into its evidence 57 percent of the time instead of 45: that is better selection from bridge feedback. And on the same evidence, the reader's confidence rule would give only 29.5, while COMMIT gives 37.5: that is the learned answer choice. The ablation table confirms that each part helps alone and that together they help most.</aside>
+</section>
+
+<!-- ============================ 17. VARIANTS ============================ -->
+<section>
+  <h2>Results: ideas from the literature, tested on our method</h2>
+  <div class="cols-fig">
+    <figure>
+      <img src="fig/variants.png" alt="Bar chart of test F1 for training variants">
+      <p class="cap"><b>Figure 6.</b> Test F1 after 40 iterations, ± std over 3 seeds. Dotted line: RiL-PPO trained with PPO + GAE. Blue: better than RiL-PPO; grey: worse.</p>
+    </figure>
+    <div>
+      <ul class="small">
+        <li><b>Action dropout</b> <span class="cite">[9]</span> (hide 10% of candidates while sampling): the only clear gain, +1.2 (p &lt; 0.001).</li>
+        <li><b>Rao-Blackwellised COMMIT</b> (<span class="ours">ours</span>; exact expectation over the commit choice): +0.2, not significant.</li>
+        <li><b>RLOO</b> <span class="cite">[7]</span> matches PPO without any critic.</li>
+        <li><b>Self-imitation</b> <span class="cite">[10]</span> and <b>privileged critic</b> <span class="cite">[11]</span> hurt by ≈ 3.3: SIL replays early lucky episodes; the privileged critic fits values better but gives a worse policy.</li>
+        <li><b>GRPO</b> <span class="cite">[6]</span> collapses to 1 entity: dividing by the group's reward std amplifies noise when most rewards are 0. <b>Dr. GRPO</b> <span class="cite">[8]</span> removes the division and recovers +10.7.</li>
+        <li>Combining all extensions (28.5) is <b>worse</b> than RiL-PPO alone: they do not stack.</li>
+      </ul>
+    </div>
+  </div>
+  <aside>We also tried ideas from other papers on top of our method. Action dropout, from multi-hop knowledge graph RL, was the only clear gain. Our exact gradient for COMMIT was neutral. RLOO, which uses the other samples of the same question as a baseline, matched PPO without a critic. Self-imitation and the privileged critic hurt by about three points. GRPO collapsed, because it divides by the standard deviation of mostly-zero rewards; removing that division, as in Dr. GRPO, fixes it. And putting all extensions together was worse than our plain method, an honest negative result.</aside>
+</section>
+
+<!-- ============================ 18. GENERALISATION ============================ -->
+<section>
+  <h2>Results: does it generalise?</h2>
+  <div class="cols">
+    <div>
+      <table class="t">
+        <thead><tr><th>Selector</th><th class="n">Unseen tables</th><th class="n">MiniLM reader</th><th class="n">RoBERTa reader</th></tr></thead>
+        <tbody>
+          <tr><td>BM25 top-3</td><td class="n">20.6</td><td class="n">20.5</td><td class="n">21.1</td></tr>
+          <tr><td>PPO</td><td class="n">27.8</td><td class="n">27.7</td><td class="n">28.5</td></tr>
+          <tr class="hl"><td><b>RiL-PPO (ours)</b></td><td class="n"><b>37.4</b></td><td class="n"><b>30.8</b></td><td class="n"><b>32.0</b></td></tr>
+          <tr><td>Oracle evidence</td><td class="n">55.8</td><td class="n">56.6</td><td class="n">61.4</td></tr>
+        </tbody>
+      </table>
+      <p class="cap"><b>Table 6.</b> F1. <i>Unseen tables</i>: test questions whose table never appears in training (3,163 questions; 100-iteration models). <i>Reader swap</i>: first 1,000 test questions, 40-iteration models trained with MiniLM, evaluated with RoBERTa-base-SQuAD2 <span class="cite">[16]</span> without retraining.</p>
+    </div>
+    <div>
+      <ul class="small">
+        <li><b>New tables:</b> the gain is unchanged (37.4 vs 37.5 overall): the policy learned a strategy, not table identities.</li>
+        <li><b>New reader:</b> the policy keeps its lead and gains more from the stronger reader (+1.2 vs +0.8 for PPO), since the reader inside its loop also improved.</li>
+        <li><b>Self-consistency</b> <span class="cite">[12]</span> (majority vote over 8 sampled evidence paths): +0.2 F1 for twice the reader calls. Greedy decoding is already near the policy's mode, so we do not use it.</li>
+      </ul>
+    </div>
+  </div>
+  <aside>Does it generalise? On test questions whose tables never appear in training, our model scores 37.4, the same as overall, so it learned a strategy rather than memorising tables. When we swap in a different, stronger reader, RoBERTa, without retraining, it keeps its lead. Majority voting over eight sampled paths added almost nothing, so we use the single greedy path.</aside>
+</section>
+
+<!-- ============================ 19. QUALITATIVE ============================ -->
+<section>
+  <h2>Inference example: one episode of RiL-PPO</h2>
+  <table class="t">
+    <thead><tr><th>Step</th><th>Policy decision</th><th class="n">π</th><th>Reader output (fed back)</th><th>Why (features)</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Row “Pos is 4 ; … Driver is Jenson Button”</td><td class="n">0.91</td><td>“Jenson Button”</td><td>no reader output yet: question–entity features only</td></tr>
+      <tr><td>2</td><td>Passage <i>Jenson Button</i></td><td class="n">0.86</td><td>“British”</td><td>bridge = title, linked to last hop</td></tr>
+      <tr><td>3</td><td>Passage <i>Rubens Barrichello</i></td><td class="n">0.75</td><td>“Brazilian”</td><td>STOP had only 0.05; horizon reached</td></tr>
+      <tr class="hl"><td>COMMIT</td><td>Answer from <i>Jenson Button</i> passage</td><td class="n">0.54</td><td colspan="2"><b>“British”</b>: EM 1, F1 1.0 (max-confidence would answer “Jenson Button”)</td></tr>
+    </tbody>
+  </table>
+  <p class="cap"><b>Table 7.</b> Output of <code>scripts/eval/demo.py --idx 2</code> on test question #2 (Figure 1), 100-iteration RiL-PPO, seed 0. π: probability of the chosen action. 3 of 56 entities read; about 3 s per question with the reader running live, 0.2 s with cached reads.</p>
+  <div class="cols" style="margin-top:34px">
+    <div class="small">
+      <h3 style="font-size:28px">Inference procedure</h3>
+      <ol>
+        <li>Build the entity graph and load frozen embeddings.</li>
+        <li>Greedy action \(\arg\max_a \pi_\theta(a \mid s_t)\); read; update the state.</li>
+        <li>COMMIT; return the committed span; score with EM / F1.</li>
+      </ol>
+    </div>
+    <div class="small">
+      <h3 style="font-size:28px">A remaining failure mode</h3>
+      <p>Step 3 reads an unneeded passage: the policy rarely stops early. Here COMMIT ignored it, but on other questions the extra span can win. Learning to stop is the main open issue.</p>
+    </div>
+  </div>
+  <aside>Here is one complete inference episode, the same question as in Figure 1; this is what our demo script prints. Step 1 reads the right row, the reader says Jenson Button. Step 2 follows the bridge to his passage, the reader says British. Step 3 reads an extra passage it did not need. COMMIT then picks British, which is correct. Inference is greedy: take the most likely action at each step, no training. One weakness is visible: the policy rarely stops early.</aside>
+</section>
+
+<!-- ============================ 20. CONCLUSION ============================ -->
+<section>
+  <h2>Conclusion and key findings</h2>
+  <div class="cols-wide">
+    <div>
+      <ol>
+        <li>Evidence selection for multi-hop table + text QA can be learned from answer F1 alone with PPO; it beats every fixed rule by about 7 F1.</li>
+        <li>Plain PPO saturates (≈ 28 F1) because the reader sits <b>outside</b> the decision loop.</li>
+        <li><span class="ours">Reader-in-the-Loop PPO</span>, bridge feedback + learned COMMIT, reaches <b>37.5 F1 / 31.0 EM</b>: +9.5 F1 over PPO with the same budget, p &lt; 0.001; it holds on unseen tables and with an unseen reader.</li>
+        <li>Both components contribute: better evidence (+12 points answer recall) and better answer choice (+8 F1).</li>
+        <li>From the literature, only action dropout and RLOO helped; GRPO fails on sparse rewards unless its std normalisation is removed.</li>
+      </ol>
+    </div>
+    <div class="box small">
+      <h3 style="font-size:28px">Limitations</h3>
+      <ul>
+        <li>3 seeds; extensions not tuned.</li>
+        <li>Extractive reader: no arithmetic or comparison answers.</li>
+        <li>Evaluated on the dev set (test answers hidden).</li>
+      </ul>
+      <h3 style="font-size:28px;margin-top:18px">Future work</h3>
+      <ul>
+        <li>RiL-PPO + action dropout, longer training, 5 seeds.</li>
+        <li>Horizon 4, cell-level nodes, better stopping.</li>
+        <li>An LLM reader inside the loop.</li>
+      </ul>
+    </div>
+  </div>
+  <aside>To conclude. Learning evidence selection from the answer alone works and beats fixed rules. Plain PPO saturates because the reader is outside the loop. Our method, bridge feedback plus a learned COMMIT step, reaches 37.5 F1, 9.5 points above PPO, and holds on unseen tables and readers. Both parts contribute. Of the literature ideas, action dropout and RLOO helped. Limitations: three seeds, an extractive reader, and dev-set evaluation. Next we would train longer with action dropout, improve stopping, and put an LLM reader in the loop.</aside>
+</section>
+
+<!-- ============================ 21. REFERENCES ============================ -->
+<section style="font-size:20px;line-height:1.32">
+  <h2 style="margin-bottom:28px">References</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 56px">
+    <div>
+      <p>[1] W. Chen, H. Zha, Z. Chen, W. Xiong, H. Wang, W. Y. Wang. HybridQA: A dataset of multi-hop question answering over tabular and textual data. <i>Findings of EMNLP</i>, 2020. Data: github.com/wenhuchen/HybridQA</p>
+      <p>[2] J. Schulman, F. Wolski, P. Dhariwal, A. Radford, O. Klimov. Proximal policy optimization algorithms. arXiv:1707.06347, 2017.</p>
+      <p>[3] J. Schulman, P. Moritz, S. Levine, M. I. Jordan, P. Abbeel. High-dimensional continuous control using generalized advantage estimation. <i>ICLR</i>, 2016.</p>
+      <p>[4] A. Y. Ng, D. Harada, S. Russell. Policy invariance under reward transformations. <i>ICML</i>, 1999.</p>
+      <p>[5] R. J. Williams. Simple statistical gradient-following algorithms for connectionist RL. <i>Machine Learning</i>, 1992.</p>
+      <p>[6] Z. Shao et al. DeepSeekMath: pushing the limits of mathematical reasoning in open language models (GRPO). arXiv:2402.03300, 2024.</p>
+      <p>[7] A. Ahmadian et al. Back to basics: revisiting REINFORCE-style optimization for learning from human feedback in LLMs (RLOO). <i>ACL</i>, 2024.</p>
+      <p>[8] Z. Liu et al. Understanding R1-Zero-like training: a critical perspective (Dr. GRPO). <i>COLM</i>, 2025.</p>
+      <p>[9] X. V. Lin, R. Socher, C. Xiong. Multi-hop knowledge graph reasoning with reward shaping (action dropout). <i>EMNLP</i>, 2018.</p>
+      <p>[10] J. Oh, Y. Guo, S. Singh, H. Lee. Self-imitation learning. <i>ICML</i>, 2018.</p>
+      <p>[11] L. Pinto, M. Andrychowicz, P. Welinder, W. Zaremba, P. Abbeel. Asymmetric actor critic for image-based robot learning. <i>RSS</i>, 2018.</p>
+      <p>[12] X. Wang et al. Self-consistency improves chain of thought reasoning in language models. <i>ICLR</i>, 2023.</p>
+    </div>
+    <div>
+      <p>[13] N. Reimers, I. Gurevych. Sentence-BERT. <i>EMNLP</i>, 2019. Model: sentence-transformers/all-MiniLM-L6-v2.</p>
+      <p>[14] W. Wang et al. MiniLM: deep self-attention distillation for task-agnostic compression of pre-trained transformers. <i>NeurIPS</i>, 2020. Model: deepset/minilm-uncased-squad2.</p>
+      <p>[15] P. Rajpurkar, R. Jia, P. Liang. Know what you don't know: unanswerable questions for SQuAD. <i>ACL</i>, 2018.</p>
+      <p>[16] Y. Liu et al. RoBERTa: a robustly optimized BERT pretraining approach. arXiv:1907.11692, 2019. Model: deepset/roberta-base-squad2.</p>
+      <p>[17] S. Robertson, H. Zaragoza. The probabilistic relevance framework: BM25 and beyond. <i>Found. Trends IR</i>, 2009.</p>
+      <p>[18] M. M. José et al. Question answering with texts and tables through deep reinforcement learning. <i>BRACIS</i>, 2024.</p>
+      <p>[19] P. Jiang et al. s3: You don't need that much data to train a search agent via RL. <i>EMNLP</i>, 2025.</p>
+      <p>[20] Y. Lee et al. Learning to reduce: optimal representations of structured data in prompting LLMs. arXiv:2402.14195, 2024.</p>
+      <p>[21] Z. Wu et al. Table-R1: region-based reinforcement learning for table understanding. arXiv:2505.12415, 2025.</p>
+      <p>[22] Z. Wang et al. Chain-of-Table: evolving tables in the reasoning chain for table understanding. <i>ICLR</i>, 2024.</p>
+      <p>[23] S.-A. Chen et al. TableRAG: million-token table understanding with language models. <i>NeurIPS</i>, 2024.</p>
+      <p>[24] O. Vinyals, M. Fortunato, N. Jaitly. Pointer networks. <i>NeurIPS</i>, 2015.</p>
+      <p style="margin-top:8px">Code: our implementation in PyTorch and Hugging Face Transformers (repository <code>mhtrl</code>); no external RL library was used.</p>
+    </div>
+  </div>
+  <aside>These are all the papers, models, code and the dataset we used.</aside>
+</section>
+
+<!-- ============================ 22. QUESTIONS ============================ -->
+<section style="display:flex;flex-direction:column;justify-content:center;padding:120px 160px">
+  <h1 style="font-family:'Source Serif 4',Georgia,serif;font-size:72px;font-weight:600;color:#17253F;margin-bottom:40px">Thank you. Questions?</h1>
+  <p style="font-size:32px;line-height:1.6">RiL-PPO: <b>37.5 F1 / 31.0 EM</b> on HybridQA dev, +9.5 F1 over PPO with the same budget.</p>
+  <p style="font-size:32px;line-height:1.6" class="muted">Live demo: <code>python scripts/eval/demo.py --idx 2 --fresh</code></p>
+  <p style="font-size:26px;margin-top:40px" class="muted">Backup slides follow: features, hyper-parameters, extension definitions, significance tests, training diagnostics, shaping proof, code structure.</p>
+  <aside>Thank you. We are happy to take questions, and we can run the demo live.</aside>
+</section>
+
+<!-- ============================ BACKUP B1: FEATURES ============================ -->
+<section class="backup">
+  <h2><span class="backup-tag">Backup ·</span> Input features of the policy</h2>
+  <div class="cols">
+    <div>
+      <table class="t" style="font-size:22px">
+        <thead><tr><th>Candidate feature (14, baseline)</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td>is_row, is_passage</td><td>entity type</td></tr>
+          <tr><td>cos(q, a), bm25_norm</td><td>similarity to the question</td></tr>
+          <tr><td>rank_in_type, global_topk</td><td>rank among rows / passages</td></tr>
+          <tr><td>linked_to_evidence, linked_to_last</td><td>graph link to selected entities</td></tr>
+          <tr><td>row_position, degree</td><td>position in table, number of links</td></tr>
+          <tr><td>q_overlap, q_novel_overlap</td><td>question words covered (new ones)</td></tr>
+          <tr><td>number_match, max_cos_to_evidence</td><td>shared number, redundancy</td></tr>
+        </tbody>
+      </table>
+      <p class="cap"><b>Table B1.</b> Baseline candidate features; plus 8 state scalars (step, rows / passages selected, question coverage, …).</p>
+    </div>
+    <div>
+      <table class="t" style="font-size:22px">
+        <thead><tr><th>Added by RiL-PPO (<span class="ours">ours</span>)</th><th>Phase</th></tr></thead>
+        <tbody>
+          <tr><td>bridge_in_text, bridge_is_title, last_bridge_in_text, bridge_in_row</td><td>select</td></tr>
+          <tr><td>commit_conf, commit_score (\(\tilde\sigma\)), commit_is_maxconf</td><td>commit</td></tr>
+          <tr><td>commit_span_in_q, commit_agreement</td><td>commit</td></tr>
+          <tr><td>commit_span_numeric, commit_span_len</td><td>commit</td></tr>
+          <tr class="sep"><td>State: max_conf, last_conf, last_span_informative</td><td>both</td></tr>
+          <tr><td>State: question type (who / when / number / where / other)</td><td>both</td></tr>
+          <tr><td>State: commit_phase flag</td><td>both</td></tr>
+        </tbody>
+      </table>
+      <p class="cap"><b>Table B2.</b> 11 candidate features and 9 state scalars added by our method. A span is “informative” if it is not empty and not just question words.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ BACKUP B2: EXTENSIONS ============================ -->
+<section class="backup">
+  <h2><span class="backup-tag">Backup ·</span> Definitions of the tested variants</h2>
+  <div class="cols">
+    <div>
+      <p class="small"><b>RLOO</b> <span class="cite">[7]</span>: \(G = 4\) episodes per question, rewards \(R_1..R_G\):</p>
+      <div class="eq" style="font-size:27px">$$ A_i = R_i - \tfrac{1}{G-1}\textstyle\sum_{j\ne i} R_j \tag{B1} $$</div>
+      <p class="small"><b>GRPO</b> <span class="cite">[6]</span> and <b>Dr. GRPO</b> <span class="cite">[8]</span>:</p>
+      <div class="eq" style="font-size:27px">$$ A_i^{\text{GRPO}} = \frac{R_i - \bar R}{\mathrm{std}(R) + \varepsilon}, \qquad A_i^{\text{Dr}} = R_i - \bar R \tag{B2} $$</div>
+      <p class="small"><b>Rao-Blackwellised COMMIT</b> (<span class="ours">ours</span>): instead of the sampled commit \(e^\star\), use the exact expected answer reward</p>
+      <div class="eq" style="font-size:27px">$$ \mathbb E_{e \sim \pi_\theta}\big[\mathrm{F1}(R(q,e), y^\star)\big] = \textstyle\sum_{e \in E_T} \pi_\theta(e \mid s)\, \mathrm{F1}(R(q,e), y^\star) \tag{B3} $$</div>
+    </div>
+    <div class="small">
+      <p style="margin-bottom:14px"><b>Action dropout</b> <span class="cite">[9]</span>: during sampling each entity candidate is hidden with probability 0.1 (never STOP or COMMIT options); the stored log-probability is that of the full policy, so the PPO ratio (10) stays consistent.</p>
+      <p style="margin-bottom:14px"><b>Self-imitation</b> <span class="cite">[10]</span>: replay buffer of past episodes; extra loss \(-\log \pi_\theta(a \mid s)\,\max(G - V(s), 0)\).</p>
+      <p style="margin-bottom:14px"><b>Privileged critic</b> <span class="cite">[11]</span>: \(V_\phi\) also sees 6 training-only inputs (gold-evidence recall, answer present, …); the actor does not.</p>
+      <p style="margin-bottom:14px"><b>EMA</b>: Polyak average \(\bar\theta \leftarrow 0.9\,\bar\theta + 0.1\,\theta\); kept only if better on validation (never was).</p>
+      <p><b>Self-consistency</b> <span class="cite">[12]</span>: greedy episode + 7 samples at temperature 0.7; majority vote over normalised answers.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ BACKUP B3: SIGNIFICANCE ============================ -->
+<section class="backup">
+  <h2><span class="backup-tag">Backup ·</span> Significance tests</h2>
+  <table class="t">
+    <thead><tr><th>A − B</th><th class="n">ΔF1</th><th class="n">95% CI</th><th class="n">p (one-sided)</th></tr></thead>
+    <tbody>
+      <tr class="hl"><td>RiL-PPO 100 it − PPO 100 it</td><td class="n">+9.55</td><td class="n">[8.56, 10.58]</td><td class="n">&lt; 0.001</td></tr>
+      <tr><td>RiL-PPO 100 it − BM25 top-3</td><td class="n">+16.74</td><td class="n">[15.36, 18.13]</td><td class="n">&lt; 0.001</td></tr>
+      <tr><td>RiL-PPO 40 it − PPO 40 it</td><td class="n">+2.26</td><td class="n">[1.48, 3.04]</td><td class="n">&lt; 0.001</td></tr>
+      <tr><td>bridge feedback only − PPO</td><td class="n">+1.09</td><td class="n">[0.39, 1.79]</td><td class="n">0.002</td></tr>
+      <tr><td>COMMIT only − PPO</td><td class="n">+1.41</td><td class="n">[0.67, 2.17]</td><td class="n">&lt; 0.001</td></tr>
+      <tr><td>RiL-PPO − bridge feedback only</td><td class="n">+1.17</td><td class="n">[0.43, 1.90]</td><td class="n">0.001</td></tr>
+      <tr><td>RiL-PPO − COMMIT only</td><td class="n">+0.85</td><td class="n">[0.17, 1.53]</td><td class="n">0.008</td></tr>
+      <tr><td>+ action dropout − RiL-PPO</td><td class="n">+1.24</td><td class="n">[0.58, 1.89]</td><td class="n">&lt; 0.001</td></tr>
+      <tr><td>RLOO − RiL-PPO (PPO)</td><td class="n">+0.34</td><td class="n">[−0.35, 1.01]</td><td class="n">0.17</td></tr>
+      <tr><td>Dr. GRPO − GRPO</td><td class="n">+10.66</td><td class="n">[9.66, 11.69]</td><td class="n">&lt; 0.001</td></tr>
+    </tbody>
+  </table>
+  <p class="cap"><b>Table B3.</b> Paired bootstrap over the 3,466 test questions (10,000 resamples), each method's per-question F1 averaged over its 3 seeds.</p>
+</section>
+
+<!-- ============================ BACKUP B4: DIAGNOSTICS ============================ -->
+<section class="backup">
+  <h2><span class="backup-tag">Backup ·</span> Optimisation diagnostics</h2>
+  <table class="t">
+    <thead><tr><th>Method</th><th class="n">Train answer F1</th><th class="n">Critic expl. var.</th><th class="n">KL / update</th><th class="n">Clip fraction</th><th class="n">Entropy</th><th class="n">Entities</th></tr></thead>
+    <tbody>
+      <tr><td>PPO, 40 it</td><td class="n">0.326</td><td class="n">0.47</td><td class="n">0.0028</td><td class="n">0.033</td><td class="n">1.27</td><td class="n">2.60</td></tr>
+      <tr><td>RiL-PPO, 40 it</td><td class="n">0.344</td><td class="n">0.48</td><td class="n">0.0028</td><td class="n">0.034</td><td class="n">1.14</td><td class="n">2.71</td></tr>
+      <tr><td>PPO, 100 it</td><td class="n">0.441</td><td class="n">0.84</td><td class="n">0.0014</td><td class="n">0.016</td><td class="n">0.45</td><td class="n">2.26</td></tr>
+      <tr class="hl"><td>RiL-PPO, 100 it</td><td class="n">0.533</td><td class="n">0.75</td><td class="n">0.0015</td><td class="n">0.017</td><td class="n">0.45</td><td class="n">2.64</td></tr>
+      <tr><td>Privileged critic, 40 it</td><td class="n">0.332</td><td class="n">0.61</td><td class="n">0.0029</td><td class="n">0.034</td><td class="n">1.17</td><td class="n">2.49</td></tr>
+      <tr><td>GRPO, 40 it</td><td class="n">0.220</td><td class="n">–</td><td class="n">0.0021</td><td class="n">0.024</td><td class="n">0.55</td><td class="n">1.03</td></tr>
+    </tbody>
+  </table>
+  <p class="cap"><b>Table B4.</b> Training-log statistics, mean over the last 10 iterations and 3 seeds. Both 100-iteration runs end at the same entropy and KL; the difference is in what the policy can observe, not in how stably it was optimised. GRPO: 46% of groups had zero advantage, and it selects ~1 entity.</p>
+</section>
+
+<!-- ============================ BACKUP B5: SHAPING ============================ -->
+<section class="backup">
+  <h2><span class="backup-tag">Backup ·</span> Why the shaping does not change the optimal policy</h2>
+  <div class="cols">
+    <div>
+      <p style="margin-bottom:14px">Shaped return of an episode of length \(T\) with \(\gamma = 1\):</p>
+      <div class="eq">$$ \sum_{t=0}^{T-1} \big[\Phi(s_{t+1}) - \Phi(s_t)\big] = \Phi(s_T) - \Phi(s_0) = 0 \tag{B4} $$</div>
+      <p style="margin:14px 0">because \(E_0 = \emptyset\) gives \(\Phi(s_0) = 0\), and we define \(\Phi(s_T) = 0\). Hence for every policy</p>
+      <div class="eq">$$ \mathbb E_\pi\Big[\sum_t r_t\Big] = \mathbb E_\pi\Big[\mathrm{F1}(\hat y, y^\star) - c\,|E_T|\Big] \tag{B5} $$</div>
+      <p>so shaping only changes <b>when</b> credit arrives, not which policy is best <span class="cite">[4]</span>.</p>
+    </div>
+    <div class="small">
+      <h3 style="font-size:28px">With COMMIT (<span class="ours">ours</span>)</h3>
+      <p style="margin-bottom:14px">An episode now has \(|E_T|\) select steps, an optional explicit STOP step and a COMMIT step. We assign the potential of state \(k\) as \(\Phi(E_{\min(k, |E_T|)})\), i.e. STOP and COMMIT states carry the potential of the final selection, and the absorbing state after COMMIT has potential 0.</p>
+      <p>The sum in (B4) still telescopes to 0, so (B5) holds unchanged. The implementation asserts that the number of rewards equals the number of recorded steps.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ BACKUP B6: CODE ============================ -->
+<section class="backup">
+  <h2><span class="backup-tag">Backup ·</span> Implementation</h2>
+  <div class="cols">
+    <table class="t" style="font-size:23px">
+      <thead><tr><th>File (src/mhtrl/)</th><th>Content</th></tr></thead>
+      <tbody>
+        <tr><td>data.py</td><td>HybridQA → entity graphs, gold paths</td></tr>
+        <tr><td>encoder.py, reader.py</td><td>frozen MiniLM encoder; frozen reader with a per-(question, entity) cache</td></tr>
+        <tr><td>env.py</td><td>MDP: candidates, features, bridge features, COMMIT phase, rewards (3)–(4)</td></tr>
+        <tr><td>policy.py</td><td>pointer actor (5)–(7), commit head (15), critic (8)</td></tr>
+        <tr><td>rollout.py</td><td>batched episodes, evaluation, self-consistency</td></tr>
+        <tr><td>rl/algos.py</td><td>PPO, GRPO, RLOO, REINFORCE and all extensions</td></tr>
+        <tr class="sep"><td>scripts/train/run_loop_suite.py</td><td>resumable driver for all 48 runs</td></tr>
+        <tr><td>scripts/eval/demo.py</td><td>inference on one question (Table 7)</td></tr>
+        <tr><td>tests/test_core.py</td><td>17 unit tests (CPU and CUDA)</td></tr>
+      </tbody>
+    </table>
+    <div class="small">
+      <h3 style="font-size:28px">Engineering notes</h3>
+      <ul>
+        <li>Reader calls dominate cost; caching every (question, entity) read makes an iteration of 1,024 episodes take 3–5 s on the GPU.</li>
+        <li>Episodes run in lock-step batches; the reader is batched across episodes between steps.</li>
+        <li>Unit tests check: masking, shaping telescoping, COMMIT prior equals max-confidence at initialisation, RLOO / dropout / privileged-critic shapes, and an end-to-end training step.</li>
+        <li>All configurations are YAML files in <code>configs/</code>; every result in this talk is regenerated by <code>scripts/analysis/loop_report.py</code>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  renderMathInElement(document.body, {
+    delimiters: [{left: "$$", right: "$$", display: true}, {left: "\\(", right: "\\)", display: false}],
+    throwOnError: false
+  });
+  var secs = document.querySelectorAll("section");
+  var main = Array.prototype.filter.call(secs, function (s) { return !s.classList.contains("backup"); });
+  var b = 0;
+  secs.forEach(function (s, i) {
+    if (i === 0) return;
+    var f = document.createElement("div");
+    f.className = "foot";
+    var label = s.classList.contains("backup") ? ("Backup B" + (++b)) : ((main.indexOf(s) + 1) + " / " + main.length);
+    f.innerHTML = "<span>Gupta &amp; Singh · Reader-in-the-Loop PPO · CS769, IIT Bombay</span><span>" + label + "</span>";
+    s.appendChild(f);
+  });
+});
+</script>
+</body>
+</html>
